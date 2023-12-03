@@ -1,7 +1,5 @@
 import ModbusRTU from 'modbus-serial';
-import { ConnectionType } from '../dtos/enums/connection-type.enum';
-
-
+import { ConnectionType } from '../../dtos/enums/connection-type.enum';
 
 export class ModbusServer {
   serverId: number;
@@ -24,25 +22,27 @@ export class ModbusServer {
     this.client = new ModbusRTU();
   }
 
-  public async connect() {    
-    if (this.connectionType === ConnectionType.TCP) {        
+  public async connect() {
+    if (this.connectionType === ConnectionType.TCP) {
       try {
         await this.client.connectTCP(this.ipAddress, { port: this.port });
-        
+
         this.client.setID(this.serverId);
-        console.log("Connected to Modbus Equipment");
+        console.log('Connected to Modbus Equipment');
         //let data = await this.client.readCoils(0, 1);
         //console.log(data);
-        
       } catch (error) {
         console.error('Modbus Connection Error:', error.message);
       }
-    }else{
-        console.log('please choose other type of connection');
-        
+    } else {
+      console.log('please choose other type of connection');
     }
-    return this.client
+    return this.client;
   }
 
- 
+  public static generateServerId() {
+    const randomFraction = Math.random();
+    const randomNumber = Math.floor(randomFraction * 256);
+    return randomNumber;
+  }
 }

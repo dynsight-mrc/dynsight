@@ -1,69 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import ModbusRTU from 'modbus-serial';
-import { ModbusServer } from './modbus-server';
-import { ModbusCoil } from './modbus-coil';
-import { ModbusDiscreteInput } from './modbus-discrete-input';
-import { ModbusHoldingRegister } from './modbus-holding-register';
-import { ModbusInputRegister } from './modbus-input-register';
+import { ModbusServer } from './modbus-ip-server/modbus-server';
+import { ModbusCoil } from './coils/modbus-coil';
+import { ModbusDiscreteInput } from './discrete-inputs/modbus-discrete-input';
+import { ModbusHoldingRegister } from './holding-registers/modbus-holding-register';
+import { ModbusInputRegister } from './input-registers/modbus-input-register';
 import { DataType } from '../dtos/enums/data-types.enum';
+import { InjectModel } from '@nestjs/mongoose';
+import { Coil, CoilModel } from '../models/coil.model';
+import {
+  DiscreteInput,
+  DiscreteInputModel,
+} from '../models/discrete-input.model';
+import {
+  HoldingRegister,
+  HoldingRegisterModel,
+} from '../models/holding-regster.model';
+import {
+  InputRegister,
+  InputRegisterModel,
+} from '../models/input-register.model';
 
 @Injectable()
 export class ModbusService {
-  constructor() {}
+  /* constructor(
+    @InjectModel(ModbusServer.name)
+    private readonly modbusServerModel: ModbusIpServerModel,
+    @InjectModel(Coil.name) private readonly coilModel: CoilModel,
+    @InjectModel(DiscreteInput.name)
+    private readonly discreteInputModel: DiscreteInputModel,
+    @InjectModel(HoldingRegister.name)
+    private readonly holdingREgisterModel: HoldingRegisterModel,
+    @InjectModel(InputRegister.name)
+    private readonly inputRegisterModel: InputRegisterModel,
+  ) {}
 
-  async readCoil(id: string) {
-    let modbusClient: ModbusRTU;
-    try {
-      modbusClient = await new ModbusServer(
-        1,
-        '194.104.16.166',
-        502,
-        'TCP',
-      ).connect();
-    } catch (error) {
-      console.log(error);
-      throw new Error(error);
-    }
-    let modbusEquipment = new ModbusCoil(modbusClient, 0x00f, 0x0001);
-
-    try {
-      let data = await modbusEquipment.readCoilRegister();
-      modbusEquipment.closeConnection();
-      return data;
-    } catch (error) {
-      modbusEquipment.closeConnection();
-
-      throw new Error(error);
-    }
-  }
-
-  async writeCoil(id: string) {
-    let modbusClient: ModbusRTU;
-    try {
-      modbusClient = await new ModbusServer(
-        1,
-        '194.104.16.166',
-        502,
-        'TCP',
-      ).connect();
-    } catch (error) {
-      console.log(error);
-      throw new Error(error);
-    }
-    let modbusEquipment = new ModbusCoil(modbusClient, 0x00f, 0x0001);
-
-    try {
-      await modbusEquipment.writeCoilRegister(true);
-
-      modbusEquipment.closeConnection();
-
-      return { success: 'operation done' };
-    } catch (error) {
-      modbusEquipment.closeConnection();
-
-      throw new Error(error);
-    }
-  }
+ 
 
   async readInputRegister(id: string) {
     let modbusClient: ModbusRTU;
@@ -181,5 +153,5 @@ export class ModbusService {
 
       throw new Error(error);
     }
-  }
+  } */
 }

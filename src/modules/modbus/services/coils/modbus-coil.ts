@@ -1,6 +1,6 @@
 import ModbusRTU from 'modbus-serial';
-import { ConnectionType } from '../dtos/enums/connection-type.enum';
-import { ModbusServer } from './modbus-server';
+import { ConnectionType } from '../../dtos/enums/connection-type.enum';
+import { ModbusServer } from '../modbus-ip-server/modbus-server';
 
 export class ModbusCoil {
   constructor(

@@ -1,18 +1,18 @@
 import ModbusRTU from 'modbus-serial';
-import { DataType } from '../dtos/enums/data-types.enum';
+import { DataType } from '../../dtos/enums/data-types.enum';
 
-export class ModbusInputRegister {
+export class ModbusHoldingRegister {
   constructor(
     private client: ModbusRTU,
     private startAddress: number,
     private inputQuantity: number,
     private endianness: boolean,
-    private dataType: DataType,
+    private datatype: DataType,
   ) {}
 
-  public async readInputRegister() {
+  public async readHoldingRegister() {
     try {
-      let data = await this.client.readInputRegisters(
+      let data = await this.client.readHoldingRegisters(
         this.startAddress,
         this.inputQuantity,
       );
@@ -21,13 +21,19 @@ export class ModbusInputRegister {
 
       let byteArray = this.hexToArrayOfFour(hexValue);
 
-
       return this.interpretFloat32(byteArray).toFixed(3);
     } catch (error) {
       throw new Error(error);
     }
   }
 
+  public async writeHoldingRegister() {
+    try {
+      await this.client.writeRegisters(this.startAddress, [0, 0x000a]);
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
 
   private decimalToHex(decimaNumber: number) {
     let hexNumber = decimaNumber.toString(16);
