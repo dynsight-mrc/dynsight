@@ -1,7 +1,7 @@
 import ModbusRTU from 'modbus-serial';
 import { ConnectionType } from '../../dtos/enums/connection-type.enum';
 
-export class ModbusServer {
+export class  ModbusServer {
   serverId: number;
   protected ipAddress: string;
   port: number;

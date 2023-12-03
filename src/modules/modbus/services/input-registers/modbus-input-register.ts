@@ -4,30 +4,35 @@ import { DataType } from '../../dtos/enums/data-types.enum';
 export class ModbusInputRegister {
   constructor(
     private client: ModbusRTU,
-    private startAddress: number,
-    private inputQuantity: number,
+    private startAddress: string,
+    private inputQuantity: string,
     private endianness: boolean,
-    private dataType: DataType,
+    private dataType: DataType | string,
   ) {}
 
   public async readInputRegister() {
+    if (this.dataType === DataType.UNSIGNED_32BIT_INTEGER) {
+      return this.readUnsigned32Integer();
+    }
+    throw new Error(`cannot parse datatype ${this.dataType}`);
+  }
+
+  private async readUnsigned32Integer() {
     try {
       let data = await this.client.readInputRegisters(
-        this.startAddress,
-        this.inputQuantity,
+        parseInt(this.startAddress),
+        parseInt(this.inputQuantity),
       );
 
       let hexValue = this.concatenateValue(data.data);
 
       let byteArray = this.hexToArrayOfFour(hexValue);
 
-
       return this.interpretFloat32(byteArray).toFixed(3);
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
-
 
   private decimalToHex(decimaNumber: number) {
     let hexNumber = decimaNumber.toString(16);

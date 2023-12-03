@@ -4,17 +4,41 @@ import { DataType } from '../../dtos/enums/data-types.enum';
 export class ModbusHoldingRegister {
   constructor(
     private client: ModbusRTU,
-    private startAddress: number,
-    private inputQuantity: number,
+    private startAddress: string,
+    private inputQuantity: string,
     private endianness: boolean,
-    private datatype: DataType,
+    private dataType: DataType | string,
   ) {}
 
   public async readHoldingRegister() {
+    
+    if (this.dataType === DataType.UNSIGNED_32BIT_INTEGER) {
+      return this.readUnsigned32Integer();
+    }
+      throw new Error(`cannot parse datatype ${this.dataType}`)
+    
+  }
+
+  public async writeHoldingRegister(value: number) {
+    try {
+      await this.client.writeRegisters(
+        parseInt(this.startAddress),
+        this.numberToArrayOfHex(value),
+      );
+      return {
+        success: 200,
+        message: 'Writing value to the holding register was successful',
+      };
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  private async readUnsigned32Integer() {
     try {
       let data = await this.client.readHoldingRegisters(
-        this.startAddress,
-        this.inputQuantity,
+        parseInt(this.startAddress),
+        parseInt(this.inputQuantity),
       );
 
       let hexValue = this.concatenateValue(data.data);
@@ -22,14 +46,6 @@ export class ModbusHoldingRegister {
       let byteArray = this.hexToArrayOfFour(hexValue);
 
       return this.interpretFloat32(byteArray).toFixed(3);
-    } catch (error) {
-      throw new Error(error);
-    }
-  }
-
-  public async writeHoldingRegister() {
-    try {
-      await this.client.writeRegisters(this.startAddress, [0, 0x000a]);
     } catch (error) {
       throw new Error(error);
     }
@@ -47,6 +63,20 @@ export class ModbusHoldingRegister {
       byteArray.push(parseInt(hexNumber.substring(i, i + 2), 16));
     }
     return byteArray;
+  }
+
+  private numberToArrayOfHex(number: number) {
+    console.log(number);
+
+    let hexNumber = number.toString(16).padStart(8, '0');
+    console.log(hexNumber);
+
+    let arrayOfHex = [];
+    arrayOfHex[0] = parseInt('0x' + hexNumber.slice(0, 4));
+    arrayOfHex[1] = parseInt('0x' + hexNumber.slice(4));
+    console.log(arrayOfHex);
+
+    return arrayOfHex;
   }
 
   private interpretFloat32(bytes) {

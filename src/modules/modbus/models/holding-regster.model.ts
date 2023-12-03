@@ -1,13 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Model ,Document} from 'mongoose';
-import { ModbusServer } from '../services/modbus-ip-server/modbus-server';
 import { DataType } from '../dtos/enums/data-types.enum';
+import { ModbusIpServer } from './modbus-ip-server.model';
 interface HoldingRegisterAttrs {
   name:string;
-  startAddress: number;
-  inputQuantity: number;
+  startAddress: string;
+  inputQuantity: string;
   endianness: boolean;
-  datatype: DataType | string;
+  dataType: DataType | string;
+  modbusServer:string
 }
 
 export interface HoldingRegisterModel extends Model<HoldingRegister> {
@@ -18,15 +19,15 @@ export interface HoldingRegisterModel extends Model<HoldingRegister> {
 export class HoldingRegister extends Document {
   @Prop({type:String,required:true,unique:true})
   name:string
-  @Prop({ type: Number, required: true })
-  startAddress: number;
-  @Prop({ type: Number, required: true })
-  inputQuantity: number;
+  @Prop({ type: String, required: true })
+  startAddress: string;
+  @Prop({ type: String, required: true })
+  inputQuantity: string;
   @Prop({ type: Boolean, required: true })
   endianness: boolean;
   @Prop({ type: String, required: true })
-  datatype: DataType | string;
-  @Prop({ type: String, required: true, ref: ModbusServer.name })
+  dataType: DataType | string;
+  @Prop({ type: String, required: true, ref: ModbusIpServer.name })
   modbusServer: string;
 }
 
