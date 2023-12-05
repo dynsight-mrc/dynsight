@@ -8,10 +8,11 @@ import { DeviceModule } from '../device/device.module';
 import { EquipmentModule } from '../equipment/equipment.module';
 import { BuildingModule } from '../building/building.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { RoomServiceHelper } from './services/room-helper.service';
 
 @Module({
   controllers: [RoomController],
-  providers: [RoomService],
+  providers: [RoomService,RoomServiceHelper],
   imports: [
     MongooseModule.forFeature([
       {

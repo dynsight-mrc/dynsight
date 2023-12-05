@@ -9,12 +9,14 @@ import { EquipmentService } from '../../equipment/services/equipment.service';
 import { ReadRoomDto } from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
 import { UpdateRoomZone } from '../dtos/update-room-zone.dto';
+import { RoomServiceHelper } from './room-helper.service';
+import { EquipmentWithNestedProperties } from 'src/modules/equipment/dtos/equipment-with-nested-properties.dto';
 
 @Injectable()
 export class RoomService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: RoomModel,
-
+    private readonly roomServiceHelper: RoomServiceHelper,
     private readonly propertyService: PropertyService,
     private readonly deviceService: DeviceService,
     private readonly equipmentService: EquipmentService,
@@ -38,7 +40,10 @@ export class RoomService {
     }
     const room = this.roomModel.build({
       name: createRoomDto.name,
-      properties: [],
+      floor: createRoomDto.floor,
+      building: createRoomDto.building,
+      organization: createRoomDto.organization,
+      zone: createRoomDto.organization,
     });
     await room.save();
 
@@ -48,49 +53,32 @@ export class RoomService {
     return await this.roomModel.deleteOne({ _id: id });
   }
 
-  async updateProperties(id: string, Dto: UpdateRoomPropertiesDto) {
+
+  async findOrCreatePropertiesFromDevice(
+    roomId: string,
+    updateRoomPropertiesDto: UpdateRoomPropertiesDto,
+  ): Promise<string[]> {
     const session = await this.roomModel.startSession();
     session.startTransaction();
-    let room = await this.roomModel.findById(id);
-    if(!room) throw new NotFoundException("Room not found")
-    let { equipments } = Dto;
+    let createdProperties: string[] = [];
+    //fct check if room exists
+    let room: Room = await this.findOne(roomId);
+    if (!room) throw new Error('Room not found');
     try {
-      let device = await this.deviceService.create({
-        deviceId: Dto.deviceId,
-        name: Dto.name,
-        orgranizationId: Dto.orgranizationId,
-        siteId: Dto.siteId,
-        status: Dto.status,
-      });
+      //fct extract device and create one, return created device
+      let device = await this.deviceService.findOrCreateOne(
+        updateRoomPropertiesDto,
+      );
+      let { equipments } = updateRoomPropertiesDto;
 
-      equipments.map(async (equip) => {
-        let { properties } = equip;
+      //fct that create equipment, givenr deviceId, return equip
+      //fct create property, given equipId, DeviceId,RoomId, return property
 
-        let equipment = await this.equipmentService.create({
-          deviceId: device.id,
-          equipmentId: equip.equipmentId,
-          name: equip.name,
-        });
-
-        properties.forEach(async (property) => {
-          const prop = await this.propertyService.create({
-            propertyId: property.propertyId,
-            deviceId: device.id,
-            equipmentId: equipment.id,
-            name: property.name,
-            unit: property.unit,
-            config: property.config,
-            accessType: property.accessType,
-            disabled: property.disabled,
-          });
-          room.set({ properties: [...properties, prop.id] });
-          room.save();
-          /* room =  await this.roomModel.updateOne(
-            { _id: id },
-            { $addToSet: { properties: prop.id } },
-          ); */
-        });
-      });
+      createdProperties =
+        await this.equipmentService.createEquipmentsWithProperties(
+          equipments,
+          device.deviceId,
+        );
     } catch (error) {
       await session.abortTransaction();
       console.log(error);
@@ -98,51 +86,47 @@ export class RoomService {
       throw new Error(error);
     } finally {
       session.endSession();
-      
     }
-    return room;
-    //==============++++++++
-    /* let { equipments } = Dto;
+    return createdProperties;
+  }
 
-    let deviceObj = Dto;
-    delete deviceObj.equipments;
+  async updateProperties(
+    roomId: string,
+    updateRoomPropertiesDtos: UpdateRoomPropertiesDto[],
+  ): Promise<Room> {
+    const session = await this.roomModel.startSession();
+    session.startTransaction();
 
-    const device = this.deviceModel.build({
-      deviceId: deviceObj.deviceId,
-      name: deviceObj.name,
-      orgranizationId: deviceObj.orgranizationId,
-      siteId: deviceObj.siteId,
-      status: deviceObj.status,
-    });
+    //fct check if room exists
+    let room: Room = await this.findOne(roomId);
+    if (!room) throw new Error('Room not found');
+    
+    let createdProperties: string[] = await this.findOrCreatePropertiesFromDevices(
+      roomId,
+      updateRoomPropertiesDtos,
+    );
 
-    await device.save();
+    await this.roomModel.updateOne(
+      { _id: room.id },
+      { properties: createdProperties },
+    );
 
-    equipments.map(async (equip) => {
-      let { properties } = equip;
+    return await this.roomModel.findById(roomId);
+  }
 
-      let equipment = this.equipmentModel.build({
-        deviceId: deviceObj.deviceId,
-        equipmentId: equip.equipmentId,
-        name: equip.name,
-      });
-
-      await equipment.save();
-
-      properties.forEach(async (property) => {
-        const prop = this.propertyModel.build({
-          propertyId: property.propertyId,
-          deviceId: deviceObj.deviceId,
-          equipmentId: equip.equipmentId,
-          name: property.name,
-          unit: property.unit,
-          config: property.config,
-          accessType: property.accessType,
-          disabled: property.disabled,
-        });
-        await prop.save();
-        return { device, prop, equipment };
-      });
-    }); */
+  async findOrCreatePropertiesFromDevices(
+    roomId: string,
+    updateRoomPropertiesDtos: UpdateRoomPropertiesDto[],
+  ): Promise<string[]> {
+    let createdProperties: string[] = [];
+    for (let updateRoomPropertiesDto of updateRoomPropertiesDtos) {
+      let properties = await this.findOrCreatePropertiesFromDevice(
+        roomId,
+        updateRoomPropertiesDto,
+      );
+      createdProperties = [...createdProperties, ...properties];
+    }
+    return createdProperties;
   }
 
   async updateZone(id: string, updateRoomZone: UpdateRoomZone) {

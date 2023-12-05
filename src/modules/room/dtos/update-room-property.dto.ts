@@ -1,9 +1,22 @@
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { EquipmentWithNestedProperties } from 'src/modules/equipment/dtos/equipment-with-nested-properties.dto';
 
-import { IsArray, IsEnum,  IsOptional,  IsString,  IsUUID, ValidateNested } from 'class-validator';
-import { ReadEquipmentDto } from 'src/modules/wattsense/dtos/equipment/read-equipment.dto';
+
+enum DeviceStatus {
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE',
+}
 
 
-enum DeviceStatus {ONLINE='ONLINE',OFFLINE='OFFLINE'}
+
+
 
 export class UpdateRoomPropertiesDto {
   @IsString()
@@ -13,18 +26,17 @@ export class UpdateRoomPropertiesDto {
   name: string;
 
   @IsString()
-  
-  orgranizationId: string|null;
+  orgranizationId: string | null;
 
   @IsString()
   @IsOptional()
   siteId?: string;
 
-  @IsEnum(DeviceStatus,{message:"Invalid Status"})
-  status:DeviceStatus | string;
+  @IsEnum(DeviceStatus, { message: 'Invalid Status' })
+  status: DeviceStatus | string;
 
   @IsArray()
-  @IsString()
   @ValidateNested({ each: true })
-  equipments: ReadEquipmentDto[];
+  @Type(() => EquipmentWithNestedProperties)
+  equipments: EquipmentWithNestedProperties[];
 }

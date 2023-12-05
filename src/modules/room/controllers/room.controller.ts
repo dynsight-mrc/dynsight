@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateRoomDto } from '../dtos/create-room.dto';
 import { ReadRoomDto } from '../dtos/read-room-dto';
@@ -22,6 +23,8 @@ export class RoomController {
 
   @Post()
   async create(@Body() createRoomDto: CreateRoomDto) {
+    console.log(createRoomDto);
+
     let results;
     try {
       results = await this.roomService.create(createRoomDto);
@@ -37,7 +40,7 @@ export class RoomController {
           HttpStatus.CONFLICT,
         );
     }
-    return results
+    return results;
   }
 
   @Get()
@@ -50,16 +53,33 @@ export class RoomController {
     return this.roomService.findOne(id);
   }
 
-  @Patch(':id/updateproperties')
-  updateProperties(
-    @Param('id') id: string,
-    @Body() updateRoomPropertyDto: UpdateRoomPropertiesDto,
+  @Patch('updateproperties')
+  async updateProperties(
+    @Query('roomId') roomId: string,
+    @Body() updateRoomPropertyDto: UpdateRoomPropertiesDto[],
   ) {
-    return this.roomService.updateProperties(id, updateRoomPropertyDto);
+    try {
+      return await this.roomService.updateProperties(
+        roomId,
+        updateRoomPropertyDto,
+      );
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.FORBIDDEN,
+          error: error.message,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
   }
-  @Patch(':id/updatezone')
-  updateZone(@Param('id') id: string, @Body() updateRoomZone: UpdateRoomZone) {
-    return this.roomService.updateZone(id, updateRoomZone);
+
+  @Patch('updatezone')
+  updateZone(
+    @Query('roomId') roomId: string,
+    @Body() updateRoomZone: UpdateRoomZone,
+  ) {
+    return this.roomService.updateZone(roomId, updateRoomZone);
   }
   @Delete(':id')
   remove(@Param('id') id: string) {

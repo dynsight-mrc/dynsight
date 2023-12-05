@@ -35,8 +35,8 @@ export class Room extends Document {
   @Prop({ type: String, required: false})
   zone: string;
 
-  @Prop([{ type: String, required: false, ref: Property.name }])
-  properties: String[];
+  @Prop({ type: [String],default:[], required: false, ref: Property.name })
+  properties: string[];
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);

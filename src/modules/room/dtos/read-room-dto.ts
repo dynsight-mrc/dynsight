@@ -6,8 +6,14 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { PropertyDto } from 'src/modules/property/dtos/property.dto';
+import { ReadPropertyDto } from 'src/modules/property/dtos/read-property.dto';
 
 export class ReadRoomDto {
+  @IsString()
+  id:string
+
+
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -29,7 +35,7 @@ export class ReadRoomDto {
   zone:string
   
   @IsArray()
-  @IsString()
-  @ValidateNested({ each: true })
-  properties: string[];
+  @ValidateNested({each:true})
+  @Type(()=>ReadPropertyDto)
+  properties: ReadPropertyDto[];
 }

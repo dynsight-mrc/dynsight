@@ -1,19 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { ReadDeviceDto } from '../dtos/device/read-device.dto';
 import { WattsenseDeviceDto } from '../dtos/device/wattsense-device.dto';
 import { WattsenseDeviceConfigDto } from '../dtos/device/wattsense-device-config.dto';
 import { WattsensePropertyDto } from '../dtos/property/wattsense-property.dto';
-import { ReadDevicesDto } from '../dtos/device/read-devices.dto';
-import { ReadPropertyDto } from '../dtos/property/read-property.dto';
+
 import { isMqttGatewayLike } from '../dtos/property/mqtt-gateway.dto';
+import { ReadDeviceDto } from 'src/modules/device/dtos/read-device.dto';
+import { ReadPropertyDto } from 'src/modules/property/dtos/read-property.dto';
+import { CreatePropertyDto } from 'src/modules/property/dtos/create-property.dto';
+import { CreateDeviceDto } from 'src/modules/device/dtos/create-device.dto';
+import { UpdateRoomPropertiesDto } from 'src/modules/room/dtos/update-room-property.dto';
 
 
 @Injectable()
 export class WattsenseApiHelper {
   constructor() {}
 
-  parseDevice(devices: WattsenseDeviceDto[]): ReadDeviceDto[] {
-    let filteredDevices: ReadDeviceDto[] = devices
+  parseDevice(devices: WattsenseDeviceDto[]): CreateDeviceDto[] {
+    let filteredDevices: CreateDeviceDto[] = devices
       .filter((device) => device.status === 'ONLINE')
       .map((device) => {
         return {
@@ -27,7 +30,7 @@ export class WattsenseApiHelper {
     return filteredDevices;
   }
 
-  parseProperty(property: WattsensePropertyDto): ReadPropertyDto {
+  parseProperty(property: WattsensePropertyDto): Partial<CreatePropertyDto> {
     return {
       propertyId: property.propertyId,
       name: property.name,
@@ -40,8 +43,8 @@ export class WattsenseApiHelper {
 
   parseDeviceConfig(
     devicesConfigurations: WattsenseDeviceConfigDto[][],
-    devices: ReadDeviceDto[],
-  ): ReadDevicesDto[] {
+    devices: CreateDeviceDto[],
+  ): UpdateRoomPropertiesDto[] {
     let devicesConfiguration = [];
 
     for (let device in devices) {
@@ -59,7 +62,7 @@ export class WattsenseApiHelper {
       let { equipments, properties } = currentConfig;
 
       equipments.forEach((equipment) => {
-        let { equipmentId, name } = equipment;
+        let { equipmentId, name,config:{protocol} } = equipment;
         let filterdParsedProperties = this.filterPropertiesByEquipmentId(
           properties,
           equipmentId,
@@ -68,6 +71,7 @@ export class WattsenseApiHelper {
         deviceConfiguration['equipments'].push({
           equipmentId,
           name,
+          protocol,
           properties: filterdParsedProperties,
         });
       });

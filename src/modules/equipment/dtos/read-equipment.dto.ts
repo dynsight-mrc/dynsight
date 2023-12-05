@@ -1,7 +1,11 @@
 import { IsEnum, IsString } from 'class-validator';
 import { ProtocolList } from 'src/common/wattsense/enums/protocol-list.enum';
 
-export class CreateEquipmentDto {
+export class ReadEquipmentDto {
+
+  @IsString()
+  id:string
+  
   @IsString()
   equipmentId: string;
 
@@ -13,5 +17,4 @@ export class CreateEquipmentDto {
   
   @IsEnum(ProtocolList)
   protocol?: ProtocolList | string;
-
 }

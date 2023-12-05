@@ -1,4 +1,3 @@
-import { Type } from "class-transformer";
 import { IsArray, IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
 
 
@@ -27,7 +26,7 @@ export class CreateRoomDto{
     
     @IsOptional()
     @IsArray()
-    @IsString()
+    @IsString({each:true})
     properties? : string[]
 
 
