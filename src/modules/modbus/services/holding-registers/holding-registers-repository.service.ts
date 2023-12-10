@@ -7,6 +7,7 @@ import {
 import { CreateHoldingRegisterDto } from '../../dtos/holding-register/create-holding-register.dto';
 import { ModbusIpServerService } from '../modbus-ip-server/modbus-ip-server.service';
 import { ReadModbusIpServerDto } from '../../dtos/modbus-server/read-modbus-ip-server.dto';
+import { ReadHoldingRegisterDto } from '../../dtos/holding-register/read-holding-register.dto';
 
 @Injectable()
 export class HoldingRegistersRepositoryService {
@@ -22,14 +23,13 @@ export class HoldingRegistersRepositoryService {
 
   async find(id: string) {
     try {
-      let holdingRegister =  (await this.holdinRegisterModel.findById(id)).populate(
-        'modbusServer',
-      );
-      return holdingRegister
+      let holdingRegister = (
+        await this.holdinRegisterModel.findById(id)
+      ).populate('modbusServer');
+      return holdingRegister;
     } catch (error) {
-        throw new Error(error.message)
+      throw new Error(error.message);
     }
-   
   }
 
   async create(createHoldingRegisterDto: CreateHoldingRegisterDto) {
@@ -77,7 +77,19 @@ export class HoldingRegistersRepositoryService {
     } finally {
       await session.abortTransaction();
     }
-    return holdingRegister;
+    return holdingRegister.toJSON();
+  }
+
+  async createMany(
+    createHoldingRegistersDtos: CreateHoldingRegisterDto[],
+  ): Promise<ReadHoldingRegisterDto[]> {
+    let holdingRegisters: ReadHoldingRegisterDto[] = [];
+    for (let createHoldingRegisterDto of createHoldingRegistersDtos) {
+      let holdingRegister = await this.create(createHoldingRegisterDto);
+      holdingRegisters.push(holdingRegister);
+    }
+
+    return holdingRegisters;
   }
 
   async remove(id: string) {

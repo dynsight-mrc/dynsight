@@ -15,9 +15,7 @@ import {
   InputRegister,
   InputRegisterSchema,
 } from './models/input-register.model';
-import {
-  CoilsRepositoryController,
-} from './controllers/coils/coils-repository.controller';
+import { CoilsRepositoryController } from './controllers/coils/coils-repository.controller';
 import { CoilsService } from './services/coils/coils.service';
 import { DiscreteInputsService } from './services/discrete-inputs/discrete-inputs.service';
 import { HoldingRegistersService } from './services/holding-registers/holding-registers.service';
@@ -34,7 +32,10 @@ import { DiscreteInputsRepositoryService } from './services/discrete-inputs/disc
 import { HoldingRegistersRepositoryService } from './services/holding-registers/holding-registers-repository.service';
 import { InputRegistersRepositoryService } from './services/input-registers/input-registers-repository.service';
 import { ModbusIpServerService } from './services/modbus-ip-server/modbus-ip-server.service';
-import { ModbusIpServer, ModbusIpServerSchema } from './models/modbus-ip-server.model';
+import {
+  ModbusIpServer,
+  ModbusIpServerSchema,
+} from './models/modbus-ip-server.model';
 
 @Module({
   imports: [
@@ -55,7 +56,7 @@ import { ModbusIpServer, ModbusIpServerSchema } from './models/modbus-ip-server.
     HoldingRegistersService,
     HoldingRegistersRepositoryService,
     InputRegistersService,
-    InputRegistersRepositoryService
+    InputRegistersRepositoryService,
   ],
   controllers: [
     ModbusController,
@@ -66,7 +67,13 @@ import { ModbusIpServer, ModbusIpServerSchema } from './models/modbus-ip-server.
     HoldingRegistersController,
     HoldingRegistersRepositoryController,
     InputRegistersController,
-    InputRegistersRepositoryController
+    InputRegistersRepositoryController,
+  ],
+  exports: [
+    CoilsRepositoryService,
+    DiscreteInputsRepositoryService,
+    HoldingRegistersRepositoryService,
+    InputRegistersRepositoryService,
   ],
 })
 export class ModbusModule {}

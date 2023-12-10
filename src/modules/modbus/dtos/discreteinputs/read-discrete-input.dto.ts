@@ -4,9 +4,14 @@ import { ReadModbusIpServerDto } from '../modbus-server/read-modbus-ip-server.dt
 
 export class ReadDiscreteInputDto {
   @IsString()
+  id:string
+
+  @IsString()
   name: string;
+
   @IsString()
   startAddress: string;
+  
   @IsString()
   inputQuantity: string;
   

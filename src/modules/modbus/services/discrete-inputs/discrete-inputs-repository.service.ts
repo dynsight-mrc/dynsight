@@ -71,8 +71,20 @@ export class DiscreteInputsRepositoryService {
     } finally {
       await session.abortTransaction();
     }
-    return discreteInput;
+    return discreteInput.toJSON();
   }
+
+
+  async createMany(createDiscreteInputsDtos : CreateDiscreteInputDto[]):Promise<ReadDiscreteInputDto[]>{
+    let discreteInputs : ReadDiscreteInputDto[] =[]
+    for(let createDiscreteInputDto of createDiscreteInputsDtos){
+        let discreteInput = await this.create(createDiscreteInputDto)
+        discreteInputs.push(discreteInput)
+      }
+
+    return discreteInputs
+  }
+
 
   async remove(id: string) {
     try {

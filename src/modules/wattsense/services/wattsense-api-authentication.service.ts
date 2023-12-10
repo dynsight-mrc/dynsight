@@ -30,7 +30,6 @@ export class WattsenseApiAuthenticator {
     this.method = method;
     this.apiSecret = apiSecret;
     this.apiKey = apiKey;
-    this.timestamp = this.genereteCurrentTimestamp();
   }
   private genereteCurrentTimestamp(): number {
     return new Date().getTime();
@@ -56,7 +55,11 @@ export class WattsenseApiAuthenticator {
   }
 
   public generateApiConfig(): Headers {
+    this.timestamp = this.genereteCurrentTimestamp();
+
     this.convertHmacToString();
+    
+    
     return {
       headers: {
         'X-API-Auth': `${this.apiKey}:${this.hmacHash}`,

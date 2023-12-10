@@ -9,6 +9,7 @@ import { EquipmentModule } from '../equipment/equipment.module';
 import { BuildingModule } from '../building/building.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { RoomServiceHelper } from './services/room-helper.service';
+import { ModbusModule } from '../modbus/modbus.module';
 
 @Module({
   controllers: [RoomController],
@@ -24,7 +25,8 @@ import { RoomServiceHelper } from './services/room-helper.service';
     DeviceModule,
     EquipmentModule,
     BuildingModule,
-    OrganizationModule
+    OrganizationModule,
+    ModbusModule
   ],
 })
 export class RoomModule {}

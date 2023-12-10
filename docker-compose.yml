@@ -9,3 +9,26 @@ services:
       - 27017:27017
     environment:
       MONGO_INITDB_DATABASE: dynsight
+    network_mode: 'host'
+  rabbit-mq:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbitmq.yml 
+    container_name: rabbitmq
+    ports:
+      - 5672:5672 
+      - 15672:15672
+      - 1883:1883
+    network_mode: 'host'
+  dynsight-listener:
+    image: oussamabenkemchi/dynsight-listener
+    container_name: dynsight-listener
+    ports:
+      - 4000:4000
+    network_mode: 'host'
+  dynsight:
+    image: oussamabenkemchi/dynsight
+    container_name: dynsight
+    ports:
+      - 5000:5000
+    network_mode: 'host'

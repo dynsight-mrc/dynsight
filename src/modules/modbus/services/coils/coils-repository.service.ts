@@ -5,6 +5,7 @@ import { CreateCoilDto } from '../../dtos/coils/create-coil.dto';
 import { ModbusIpServerService } from '../modbus-ip-server/modbus-ip-server.service';
 
 import { ReadModbusIpServerDto } from '../../dtos/modbus-server/read-modbus-ip-server.dto';
+import { ReadCoilDto } from '../../dtos/coils/read-coil.dto';
 
 @Injectable()
 export class CoilsRepositoryService {
@@ -13,14 +14,14 @@ export class CoilsRepositoryService {
     private readonly modbusIpServerService: ModbusIpServerService,
   ) {}
 
-  async create(createCoilDto: CreateCoilDto) {
+  async create(createCoilDto: CreateCoilDto) {   
+    
     let foundCoil = await this.coilModel.findOne({
       $or: [
         { name: createCoilDto.name },
         { startAddress: createCoilDto.startAddress },
       ],
-    });
-
+    });    
     if (foundCoil) {
       throw new Error(
         'Coil with one of the provided credentials already exist',
@@ -28,6 +29,7 @@ export class CoilsRepositoryService {
     }
 
     let { modbusServer } = createCoilDto;
+
     let modbusIpServer
     try {
       modbusIpServer  = await this.modbusIpServerService.find(
@@ -37,6 +39,7 @@ export class CoilsRepositoryService {
         throw new Error(error);
         
     }      
+    
     if (!modbusIpServer) {
       modbusIpServer = await this.modbusIpServerService.create(modbusServer);
     }
@@ -57,8 +60,20 @@ export class CoilsRepositoryService {
     } finally {
       await session.abortTransaction();
     }
-    return coil;
+   
+    return coil.toJSON()
   }
+
+  async createMany(createCoilsDtos : CreateCoilDto[]):Promise<ReadCoilDto[]>{
+    let coils : ReadCoilDto[] =[]
+    for(let createCoilDto of createCoilsDtos){
+        let coil = await this.create(createCoilDto)
+        coils.push(coil)
+      }
+
+    return coils
+  }
+
 
   async findAll() {
     return await this.coilModel.find();

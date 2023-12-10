@@ -16,6 +16,7 @@ import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
 import { RoomService } from '../services/room.service';
 import { RequestValidationError } from 'src/common/errors/request-validation-error';
 import { UpdateRoomZone } from '../dtos/update-room-zone.dto';
+import { UpdateRoomModbusProprtiesDto } from '../dtos/update-room-modbus-proprties.dto';
 
 @Controller('rooms')
 export class RoomController {
@@ -59,10 +60,35 @@ export class RoomController {
     @Body() updateRoomPropertyDto: UpdateRoomPropertiesDto[],
   ) {
     try {
-      return await this.roomService.updateProperties(
+      let room =  await this.roomService.updateProperties(
         roomId,
         updateRoomPropertyDto,
       );
+      if(room){
+        return {status:200,message:"Room has been updated successfully"}
+      }
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.FORBIDDEN,
+          error: error.message,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+  }
+
+  @Patch('updatemodbus')
+  async updateModbusProperties(
+    @Query('roomId') roomId: string,
+    @Body() updateRoomPropertyDto: UpdateRoomModbusProprtiesDto,
+  ) {
+    try {
+      let room =  await this.roomService.updateModbus(
+        roomId,
+        updateRoomPropertyDto,
+      );
+      return room
     } catch (error) {
       throw new HttpException(
         {

@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsDefined, IsNumber, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateModbusIpServerDto } from '../modbus-server/create-modbus-ip-server.dto';
 
@@ -16,6 +16,7 @@ export class CreateHoldingRegisterDto {
   @IsString()
   dataType: string;
 
+  @IsDefined()
   @ValidateNested()
   @Type(() => CreateModbusIpServerDto)
   modbusServer: CreateModbusIpServerDto;

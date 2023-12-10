@@ -7,6 +7,7 @@ import {
 import { CreateInputRegisterDto } from '../../dtos/input-registers/create-input-register.dto';
 import { ModbusIpServerService } from '../modbus-ip-server/modbus-ip-server.service';
 import { ReadModbusIpServerDto } from '../../dtos/modbus-server/read-modbus-ip-server.dto';
+import { ReadInputRegisterDto } from '../../dtos/input-registers/read-input-register.dto';
 
 @Injectable()
 export class InputRegistersRepositoryService {
@@ -71,7 +72,17 @@ export class InputRegistersRepositoryService {
     } finally {
       await session.abortTransaction();
     }
-    return inputRegister;
+    return inputRegister.toJSON();
+  }
+
+  async createMany(createInputRegistersDtos : CreateInputRegisterDto[]):Promise<ReadInputRegisterDto[]>{
+    let inputRegisters : ReadInputRegisterDto[] =[]
+    for(let createInputRegisterDto of createInputRegistersDtos){
+        let coil = await this.create(createInputRegisterDto)
+        inputRegisters.push(coil)
+      }
+
+    return inputRegisters
   }
 
   async remove(id: string) {

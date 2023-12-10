@@ -6,6 +6,7 @@ import { WattsenseApiHelper } from './wattsense-api-helper.service';
 import { WattsenseDeviceDto } from '../dtos/device/wattsense-device.dto';
 import { WattsenseDeviceConfigDto } from '../dtos/device/wattsense-device-config.dto';
 import { CreateDeviceDto } from 'src/modules/device/dtos/create-device.dto';
+import { error } from 'console';
 @Injectable()
 export class WattsenseService {
   constructor(
@@ -26,18 +27,18 @@ export class WattsenseService {
         this.wattsenseGetApiAuthenticator.generateApiConfig(),
       );
     } catch (error) {
-      console.log(error);
+      console.log(error.massage);
     }
-    
+
     //Process the returned observable from the Get request
     let devicesObservableResult = await firstValueFrom(devicesObservable);
+
     let devicesData: WattsenseDeviceDto[] = devicesObservableResult.data;
     //Retrieve the the needed attributes from the array of devices objects
 
-   
-
     let devices: CreateDeviceDto[] =
       this.wattsenseApiHelper.parseDevice(devicesData);
+
     return devices;
   }
 
@@ -64,14 +65,24 @@ export class WattsenseService {
   }
 
   async getDevicesWithRelatedEntities() {
-    let devices: CreateDeviceDto[] = await this.getDevices();
-    
+    let devices: CreateDeviceDto[];
+    try {
+      devices = await this.getDevices();
+    } catch (error) {
+      console.log(error.message);
+    }
+
     let devicesObservables: Observable<any>[];
 
-    let devicesEndpointsConfig: string[] =
-      this.wattsenseApiHelper.generateGetConfigEndpoint(
-        devices.map((device) => device.deviceId),
-      );
+    let devicesEndpointsConfig: string[];
+    try {
+      devicesEndpointsConfig =
+        this.wattsenseApiHelper.generateGetConfigEndpoint(
+          devices.map((device) => device.deviceId),
+        );
+    } catch (error) {
+      throw new Error('Error while retrieving devices data');
+    }
 
     try {
       devicesObservables = devicesEndpointsConfig.map((deviceEndpointConfig) =>
@@ -81,7 +92,7 @@ export class WattsenseService {
         ),
       );
     } catch (error) {
-      console.log(error);
+      console.log(error.message);
     }
 
     try {
@@ -101,4 +112,6 @@ export class WattsenseService {
       throw error;
     }
   }
+
+ 
 }

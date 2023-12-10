@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsNumber, IsString, ValidateNested } from "class-validator";
+import { IsDefined, IsNumber, IsString, ValidateNested } from "class-validator";
 import { CreateModbusIpServerDto } from "../modbus-server/create-modbus-ip-server.dto";
 
 export class CreateDiscreteInputDto{
@@ -10,6 +10,7 @@ export class CreateDiscreteInputDto{
     @IsString()
     inputQuantity: string;
     
+    @IsDefined()
     @ValidateNested()
     @Type(()=>CreateModbusIpServerDto)
     modbusServer: CreateModbusIpServerDto;
