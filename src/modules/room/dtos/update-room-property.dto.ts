@@ -6,7 +6,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { EquipmentWithNestedProperties } from 'src/modules/equipment/dtos/equipment-with-nested-properties.dto';
+import { EquipmentWithNestedProperties } from 'src/modules/wattsense/dtos/equipments/equipment-with-nested-properties.dto';
 
 
 enum DeviceStatus {

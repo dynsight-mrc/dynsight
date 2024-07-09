@@ -78,9 +78,8 @@ export class HoldingRegistersService {
       );
   
       try {
-        let data = await modbusEquipment.writeHoldingRegister(value);
+         await modbusEquipment.writeHoldingRegister(value);
         modbusEquipment.closeConnection();
-        return data;
       } catch (error) {
         modbusEquipment.closeConnection();
   

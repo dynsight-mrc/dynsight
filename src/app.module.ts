@@ -1,35 +1,48 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  ValidationPipe,
+} from '@nestjs/common';
 
 import { MongooseModule } from '@nestjs/mongoose';
 import { RoomModule } from './modules/room/room.module';
 import { FloorModule } from './modules/floor/floor.module';
 import { BuildingModule } from './modules/building/building.module';
 import { APP_PIPE } from '@nestjs/core';
-import { DeviceModule } from './modules/device/device.module';
-import { PropertyModule } from './modules/property/property.module';
-import { EquipmentModule } from './modules/equipment/equipment.module';
 import { WattsenseModule } from './modules/wattsense/wattsense.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { ModbusModule } from './modules/modbus/modbus.module';
+import { AuthenticationController } from './modules/authentication/controllers/authentication.controller';
+import { AuthenticationModule } from './modules/authentication/authentication.module';
+import { ExtractToken } from './common/middlewares/extractToken.middleware';
+import { AccountModule } from './modules/account/account.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath:["src/modules/wattsense/.env"]
+      envFilePath: ['src/modules/wattsense/.env', 'src/.env'],
+      isGlobal: true,
     }),
-    MongooseModule.forRoot('mongodb://localhost:27017/dynsight'),
+    //MongooseModule.forRoot('mongodb://dynsight-user:dynsight-user@38.242.254.49:60213/dynsight'),
+    MongooseModule.forRoot('mongodb://mongo-dynsight-1:27017,mongo-dynsight-2:27017,mongo-dynsight-3:27017/dynsight?replicaSet=myReplicaSet'),
+   
+    OrganizationModule,
     FloorModule,
     BuildingModule,
     RoomModule,
-    DeviceModule,
-    PropertyModule,
-    EquipmentModule,
     WattsenseModule,
-    OrganizationModule,
-    ModbusModule
+    ModbusModule,
+    AuthenticationModule,
+    AccountModule,
+    UserModule,
   ],
-  controllers: [],
-  providers: [{provide:APP_PIPE,useClass:ValidationPipe}],
+  controllers: [AuthenticationController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ExtractToken).forRoutes('account', 'organizations', 'rooms');
+  }
+}

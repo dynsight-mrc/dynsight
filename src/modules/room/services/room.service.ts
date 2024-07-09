@@ -1,62 +1,78 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Room, RoomModel } from '../models/room.model';
 import { CreateRoomDto } from '../dtos/create-room.dto';
-import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
-import { PropertyService } from '../../property/services/property.service';
-import { DeviceService } from '../../device/services/device.service';
-import { EquipmentService } from '../../equipment/services/equipment.service';
+
 import { ReadRoomDto } from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
-import { UpdateRoomZone } from '../dtos/update-room-zone.dto';
+import { CreateRoomsDto } from '../dtos/create-rooms.dto';
 import { RoomServiceHelper } from './room-helper.service';
-import { EquipmentWithNestedProperties } from 'src/modules/equipment/dtos/equipment-with-nested-properties.dto';
+import mongoose, { Types } from 'mongoose';
+import { Floor } from 'src/modules/floor/models/floor.model';
+
+/* import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
+import { EquipmentService } from '../../wattsense/services/equipments/equipment.service';
+import { UpdateRoomZone } from '../dtos/update-room-zone.dto';
 import { UpdateRoomModbusProprtiesDto } from '../dtos/update-room-modbus-proprties.dto';
-import { CoilsService } from 'src/modules/modbus/services/coils/coils.service';
 import { CoilsRepositoryService } from 'src/modules/modbus/services/coils/coils-repository.service';
 import { DiscreteInputsRepositoryService } from 'src/modules/modbus/services/discrete-inputs/discrete-inputs-repository.service';
 import { HoldingRegistersRepositoryService } from 'src/modules/modbus/services/holding-registers/holding-registers-repository.service';
 import { InputRegistersRepositoryService } from 'src/modules/modbus/services/input-registers/input-registers-repository.service';
+import { DeviceService } from 'src/modules/wattsense/services/devices/device.service'; */
 
 @Injectable()
 export class RoomService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: RoomModel,
-    private readonly deviceService: DeviceService,
+    private readonly roomServiceHelper: RoomServiceHelper,
+    /* private readonly deviceService: DeviceService,
     private readonly equipmentService: EquipmentService,
     private readonly coilsRepositoryService: CoilsRepositoryService,
     private readonly discreteInputRepositoryService: DiscreteInputsRepositoryService,
     private readonly holdingRegisterRepositoryServcie: HoldingRegistersRepositoryService,
-    private readonly inputRegisterRepositoryService: InputRegistersRepositoryService,
+    private readonly inputRegisterRepositoryService: InputRegistersRepositoryService, */
   ) {}
 
   async findAll(): Promise<ReadRoomDto[]> {
     try {
-      return await this.roomModel.find().populate("properties")
-      .populate({
-        path:"devices.coils",
-        populate:{
-          path:"modbusServer"
-        }
-      })
-      .populate({
-        path:"devices.discreteInputs",
-        populate:{
-          path:"modbusServer"
-        }
-      })
-      .populate({
-        path:"devices.discreteInputs",
-        populate:{
-          path:"modbusServer"
-        }
-      })
-      .populate({
-        path:"devices.inputRegisters",
-        populate:{
-          path:"modbusServer"
-        }
-      });
+      return await this.roomModel
+        .find()
+        .populate({
+          path: 'devices.properties',
+          populate: {
+            path: 'equipmentId',
+          },
+        })
+        .populate({
+          path: 'devices.coils',
+          populate: {
+            path: 'modbusServer',
+          },
+        })
+        .populate({
+          path: 'devices.discreteInputs',
+          populate: {
+            path: 'modbusServer',
+          },
+        })
+        .populate({
+          path: 'devices.holdingRegisters',
+          populate: {
+            path: 'modbusServer',
+          },
+        })
+        .populate({
+          path: 'devices.inputRegisters',
+          populate: {
+            path: 'modbusServer',
+          },
+        });
     } catch (error) {
       throw new Error(error.message);
     }
@@ -64,43 +80,62 @@ export class RoomService {
 
   async findOne(id: string) {
     try {
-      return (
-       
-          await this.roomModel.findOne({ _id: id })
-          .populate("properties")
-          .populate({
-            path:"devices.coils",
-            populate:{
-              path:"modbusServer"
-            }
-          })
-          .populate({
-            path:"devices.discreteInputs",
-            populate:{
-              path:"modbusServer"
-            }
-          })
-          .populate({
-            path:"devices.discreteInputs",
-            populate:{
-              path:"modbusServer"
-            }
-          })
-          .populate({
-            path:"devices.inputRegisters",
-            populate:{
-              path:"modbusServer"
-            }
-          })
-   
-      )
-      
+      return await this.roomModel
+        .findOne({ _id: id })
+        .populate({
+          path: 'devices.properties',
+          populate: {
+            path: 'equipmentId',
+          },
+        })
+        .populate('devices.coils')
+        .populate('devices.discreteInputs')
+        .populate('devices.holdingRegisters')
+        .populate('devices.inputRegisters');
     } catch (error) {
       throw new Error(error.message);
     }
   }
 
-  async create(createRoomDto: CreateRoomDto) {
+  async createMany(
+    createRoomsDto: CreateRoomsDto,
+    floors: Floor[],
+    buildingId:Types.ObjectId,
+    organizationId:Types.ObjectId,
+    session: any,
+  ) {
+    let roomsFormatedData 
+    
+    roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
+      createRoomsDto,
+      floors,
+      buildingId,
+      organizationId
+    );
+
+    try {
+      let blocsDocs = await this.roomModel.insertMany(roomsFormatedData, {
+        session,
+      });
+    
+
+      return blocsDocs;
+    } catch (error) {
+      if (error.code === 11000) {
+        console.log('Un ou plusieurs blocs existent déja avec ces paramètres');
+
+        throw new HttpException(
+          'Un ou plusieurs blocs existent déja avec ces paramètres',
+          HttpStatus.CONFLICT,
+        );
+      }
+      throw new InternalServerErrorException(
+        'Erreur lors de la création des blocs',
+      );
+    }
+  }
+
+  async create(createRoomDto: CreateRoomDto, session?: any) {
     let foundRoom = await this.roomModel.findOne({ name: createRoomDto.name });
     if (foundRoom) {
       throw new RequestValidationError(
@@ -110,20 +145,20 @@ export class RoomService {
     }
     const room = this.roomModel.build({
       name: createRoomDto.name,
-      floor: createRoomDto.floor,
-      building: createRoomDto.building,
-      organization: createRoomDto.organization,
+      floorId:new  mongoose.Types.ObjectId(createRoomDto.floor),
+      buildingId: new  mongoose.Types.ObjectId(createRoomDto.building),
+      organizationId: new  mongoose.Types.ObjectId(createRoomDto.organization),
       zone: createRoomDto.organization,
     });
-    await room.save();
+    await room.save({ session });
 
     return room;
   }
-  async remove(id: string) {
+  async remove(id: string): Promise<any> {
     return await this.roomModel.deleteOne({ _id: id });
   }
 
-  async findOrCreatePropertiesFromDevice(
+ /*  async findOrCreatePropertiesFromDevice(
     roomId: string,
     updateRoomPropertiesDto: UpdateRoomPropertiesDto,
   ): Promise<string[]> {
@@ -178,13 +213,31 @@ export class RoomService {
 
     await this.roomModel.updateOne(
       { _id: room.id },
-      { properties: createdProperties },
+      { $addToSet: { 'devices.properties': createdProperties } },
     );
     session.endSession();
     return await this.roomModel.findById(roomId);
   }
 
-  async updateModbus(
+  async deleteProperties(roomId: string, properties: string[]) {
+    //fct check if room exists
+    let room: Room = await this.findOne(roomId);
+    if (!room) throw new Error('Room not found');
+
+    try {
+      this.roomModel.updateOne(
+        { _id: roomId },
+        {
+          $pullAll: { 'devices.properties': properties },
+        },
+      );
+    } catch (error) {
+      throw new Error(error.message);
+    }
+    return await this.roomModel.findById(roomId);
+  }
+
+  async updateModbusDevices(
     roomId: string,
     updateRoomModbusProprtiesDto: UpdateRoomModbusProprtiesDto,
   ) {
@@ -205,7 +258,7 @@ export class RoomService {
     try {
       let room: Room = await this.findOne(roomId);
       if (!room) throw new Error('Room not found');
-      
+
       if (coils.length > 0) {
         modbusDevices.coils = (
           await this.coilsRepositoryService.createMany(coils)
@@ -214,7 +267,6 @@ export class RoomService {
       console.log(updateRoomModbusProprtiesDto.discreteInputs);
 
       if (discreteInputs.length > 0) {
-        
         modbusDevices.discreteInputs = (
           await this.discreteInputRepositoryService.createMany(discreteInputs)
         ).map((discreteInput) => discreteInput.id.toString());
@@ -231,10 +283,6 @@ export class RoomService {
           await this.inputRegisterRepositoryService.createMany(inputRegisters)
         ).map((inputRegister) => inputRegister.id.toString());
       }
-      /*  return {
-        createdCoils,
-      }; */
-
 
       await this.roomModel.updateOne(
         { _id: roomId },
@@ -279,9 +327,9 @@ export class RoomService {
     room.set({ zone: updateRoomZone.zone });
     await room.save();
     return room;
-  }
+  } */
 
-  async removeAll() {
+  async removeAll(): Promise<any> {
     return await this.roomModel.deleteMany({});
   }
 }

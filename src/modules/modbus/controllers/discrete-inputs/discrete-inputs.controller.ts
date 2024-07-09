@@ -14,7 +14,8 @@ export class DiscreteInputsController {
   @Get('discreteinput/:id')
   async getDiscreteInput(@Param('id') id: string) {
     try {
-      return await this.discreateInputsService.readDiscreteInput(id);
+      let value =  await this.discreateInputsService.readDiscreteInput(id);
+      return {value}
     } catch (error) {
       throw new HttpException(
         {

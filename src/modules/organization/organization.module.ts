@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common';
-import { OrganizationService } from './organization.service';
-import { OrganizationController } from './organization.controller';
+import { OrganizationService } from './services/organization.service';
+import { OrganizationController } from './controllers/organization.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Organization, OrganizationSchema } from './models/organization.model';
+import { OrganizationServiceHelper } from './services/organization-helper.service';
 
 
 
 @Module({
   imports:[MongooseModule.forFeature([{name:Organization.name,schema:OrganizationSchema}])],
-  providers: [OrganizationService],
+  providers: [OrganizationService,OrganizationServiceHelper,
+ 
+  ],
   controllers: [OrganizationController],
-  exports:[OrganizationService]
+  exports:[OrganizationService,MongooseModule]
 })
 export class OrganizationModule {}

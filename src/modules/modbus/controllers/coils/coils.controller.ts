@@ -19,8 +19,8 @@ export class CoilsController {
   @Get('coil/:id')
   async getCoil(@Param('id') id: string) {
     try {
-      let data = await this.coilsService.readCoil(id);
-      return data;
+      let value = await this.coilsService.readCoil(id);
+      return {value};
     } catch (error) {
       throw new HttpException(
         {
@@ -34,9 +34,10 @@ export class CoilsController {
   @Post('coil/:id')
   async writeCoil(@Param('id') id: string,@Body() body:WriteCoilDto) {
     try {
-      let data = await this.coilsService.writeCoil(id,body.value);
-      return data;
-    } catch (error) {
+       await this.coilsService.writeCoil(id,body.value);
+       return { status: "sucess",message:"coil successfully modified" };
+      
+      } catch (error) {
       throw new HttpException(
         {
           status: HttpStatus.FORBIDDEN,

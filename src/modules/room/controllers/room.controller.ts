@@ -6,9 +6,12 @@ import {
   HttpException,
   HttpStatus,
   Param,
+
   Patch,
   Post,
   Query,
+  UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateRoomDto } from '../dtos/create-room.dto';
 import { ReadRoomDto } from '../dtos/read-room-dto';
@@ -17,12 +20,14 @@ import { RoomService } from '../services/room.service';
 import { RequestValidationError } from 'src/common/errors/request-validation-error';
 import { UpdateRoomZone } from '../dtos/update-room-zone.dto';
 import { UpdateRoomModbusProprtiesDto } from '../dtos/update-room-modbus-proprties.dto';
+import { AuthorizationGuard } from 'src/common/guards/authorization.guard';
 
 @Controller('rooms')
+@UseGuards(AuthorizationGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
-  @Post()
+ /*  @Post()
   async create(@Body() createRoomDto: CreateRoomDto) {
     console.log(createRoomDto);
 
@@ -42,7 +47,7 @@ export class RoomController {
         );
     }
     return results;
-  }
+  } */
 
   @Get()
   async findAll(): Promise<ReadRoomDto[]> {
@@ -51,21 +56,24 @@ export class RoomController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
+    
     return this.roomService.findOne(id);
   }
 
-  @Patch('updateproperties')
-  async updateProperties(
-    @Query('roomId') roomId: string,
-    @Body() updateRoomPropertyDto: UpdateRoomPropertiesDto[],
+  @Patch('updateProperties')
+  async  updateProperties(
+    @Query('roomId') roomId:string,
+    @Body(new ValidationPipe()) updateRoomPropertyDto: UpdateRoomPropertiesDto[],
   ) {
-    try {
+      console.log(updateRoomPropertyDto);
+      
+   /*  try {
       let room =  await this.roomService.updateProperties(
         roomId,
         updateRoomPropertyDto,
       );
       if(room){
-        return {status:200,message:"Room has been updated successfully"}
+        return {status:200,message:"Room updated successfully"}
       }
     } catch (error) {
       throw new HttpException(
@@ -75,18 +83,63 @@ export class RoomController {
         },
         HttpStatus.FORBIDDEN,
       );
-    }
+    } */
   }
 
-  @Patch('updatemodbus')
-  async updateModbusProperties(
+  @Patch("deleteProperties")
+  async deleteProperties(
     @Query('roomId') roomId: string,
-    @Body() updateRoomPropertyDto: UpdateRoomModbusProprtiesDto,
+    @Body() properties: string[]
+  ){
+    /* try {
+      let room =  await this.roomService.deleteProperties(
+        roomId,
+        properties
+      );
+      if(room){
+        return {status:200,message:"Room updated successfully"}
+      }
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.FORBIDDEN,
+          error: error.message,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    } */
+  }
+
+  @Patch('updateModbusDevices')
+  async updateModbusDevices(
+    @Query('roomId') roomId: string,
+    @Body() updateRoomModbusProprtiesDto: UpdateRoomModbusProprtiesDto,
+  ) {
+   /*  try {
+      let room =  await this.roomService.updateModbusDevices(
+        roomId,
+        updateRoomModbusProprtiesDto,
+      );
+      return room
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.FORBIDDEN,
+          error: error.message,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    } */
+  }
+  /* @Patch('deleteModbusCoils')
+  async deleteModbusDevices(
+    @Query('roomId') roomId: string,
+    @Body() coils: string[],
   ) {
     try {
-      let room =  await this.roomService.updateModbus(
+      let room =  await this.roomService.deleteModbusCoils(
         roomId,
-        updateRoomPropertyDto,
+        coils,
       );
       return room
     } catch (error) {
@@ -98,22 +151,29 @@ export class RoomController {
         HttpStatus.FORBIDDEN,
       );
     }
+  } */
+
+  @Patch("deleteModbusDiscreteInputs")
+  async deleteModebusDiscreteInput(@Query('roomId') roomId: string,
+  @Body() coils: string[],){
+
   }
+
 
   @Patch('updatezone')
   updateZone(
     @Query('roomId') roomId: string,
     @Body() updateRoomZone: UpdateRoomZone,
   ) {
-    return this.roomService.updateZone(roomId, updateRoomZone);
+  /*   return this.roomService.updateZone(roomId, updateRoomZone); */
   }
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.roomService.remove(id);
+    /* return this.roomService.remove(id); */
   }
 
   @Delete('')
   async removeAll() {
-    return await this.roomService.removeAll();
+    /* return await this.roomService.removeAll(); */
   }
 }

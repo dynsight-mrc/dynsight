@@ -28,9 +28,7 @@ export class  ModbusServer {
         await this.client.connectTCP(this.ipAddress, { port: this.port });
 
         this.client.setID(this.serverId);
-        console.log('Connected to Modbus Equipment');
-        //let data = await this.client.readCoils(0, 1);
-        //console.log(data);
+       
       } catch (error) {
         console.error('Modbus Connection Error:', error.message);
       }

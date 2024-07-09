@@ -6,8 +6,8 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { PropertyDto } from 'src/modules/property/dtos/property.dto';
-import { ReadPropertyDto } from 'src/modules/property/dtos/read-property.dto';
+import { ReadPropertyDto } from 'src/modules/wattsense/dtos/properties/read-property.dto';
+
 
 export class ReadRoomDto {
   @IsString()

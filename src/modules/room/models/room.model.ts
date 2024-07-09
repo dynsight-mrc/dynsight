@@ -2,19 +2,21 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Model, Types } from 'mongoose';
 import { Floor } from '../../floor/entities/floor.entity';
 import { Organization } from '../../organization/models/organization.model';
-import { Property } from '../../property/models/property.model';
+import { Property } from '../../wattsense/models/property.model';
 import { Building } from '../../building/models/building.model';
-import { Coil } from 'src/modules/modbus/models/coil.model';
-import { DiscreteInput } from 'src/modules/modbus/models/discrete-input.model';
-import { HoldingRegister } from 'src/modules/modbus/models/holding-regster.model';
-import { InputRegister } from 'src/modules/modbus/models/input-register.model';
+import { Coil } from '../../modbus/models/coil.model';
+import { DiscreteInput } from '../../modbus/models/discrete-input.model';
+import { HoldingRegister } from '../../modbus/models/holding-regster.model';
+import { InputRegister } from '../../modbus/models/input-register.model';
 
 interface RoomAttrs {
   name: string;
-  floor?: string;
-  building?: string;
-  organization?: string;
+  floorId: Types.ObjectId;
+  buildingId: Types.ObjectId;
+  organizationId: Types.ObjectId;
   zone?:string;
+  surface?:number;
+  type?:string;
   properties?: string[];
 }
 
@@ -42,26 +44,31 @@ class Device extends Document{
 
 @Schema()
 export class Room extends Document {
-  @Prop()
-  name: String;
+  @Prop({type:String})
+  name: string;
 
-  @Prop({ type: String, required: false, ref: Floor.name })
-  floor: String;
+  @Prop({ type: Types.ObjectId,required:true,ref: Floor.name })
+  floorId: Types.ObjectId;
 
-  @Prop({ type: String, required: false, ref: Building.name })
-  building: String;
+  @Prop({ type: Types.ObjectId, required:true, ref: Building.name })
+  buildingId: Types.ObjectId;
 
-  @Prop({ type: String, required: false, ref: Organization.name })
-  organization: String;
+  @Prop({ type: Types.ObjectId, required: true, ref: Organization.name })
+  organizationId: Types.ObjectId;
 
   @Prop({ type: String, required: false})
-  zone: string;
+  zone?: string;
 
-  @Prop({ type: [String],default:[], required: false, ref: Property.name })
-  properties: string[];
+  @Prop({ type: [String],default:undefined, required: false, ref: Property.name })
+  properties?: string[];
+
+  @Prop({type:Number,required:false})
+  surface?:number
+  @Prop({type:String,required:false})
+  type?:string
 
   @Prop({type:Device,required:false})
-  devices:Device
+  devices?:Device
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);
@@ -72,6 +79,7 @@ RoomSchema.set('toJSON', {
     delete ret._id;
   },
 });
+RoomSchema.index({buildingId:1,name:1},{unique:true})
 
 RoomSchema.statics.build = function (attrs: RoomAttrs) {
   return new this(attrs);

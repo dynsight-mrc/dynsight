@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WattsenseService } from '../services/wattsense.service';
-import { WattsenseApiAuthenticator } from '../services/wattsense-api-authentication.service';
-import { WattsenseApiHelper } from '../services/wattsense-api-helper.service';
+import { WattsenseApiAuthenticator } from '../services/helper/wattsense-api-authentication.service';
+import { WattsenseApiHelper } from '../services/helper/wattsense-api-helper.service';
 import { HttpModule } from '@nestjs/axios';
 import { Connection } from 'mongoose';
 

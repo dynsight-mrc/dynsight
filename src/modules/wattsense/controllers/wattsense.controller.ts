@@ -1,8 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Res } from '@nestjs/common';
 import { WattsenseService } from '../services/wattsense.service';
-import {  firstValueFrom } from 'rxjs';
-import { WattsenseDeviceDto } from '../dtos/device/wattsense-device.dto';
-import { CreateDeviceDto } from 'src/modules/device/dtos/create-device.dto';
+
  
 @Controller('wattsense')
 export class WattsenseController {

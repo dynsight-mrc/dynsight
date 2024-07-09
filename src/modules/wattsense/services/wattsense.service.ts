@@ -1,12 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable } from '@nestjs/common';
 import { Observable, firstValueFrom, forkJoin } from 'rxjs';
-import { WattsenseApiAuthenticator } from './wattsense-api-authentication.service';
-import { WattsenseApiHelper } from './wattsense-api-helper.service';
-import { WattsenseDeviceDto } from '../dtos/device/wattsense-device.dto';
-import { WattsenseDeviceConfigDto } from '../dtos/device/wattsense-device-config.dto';
-import { CreateDeviceDto } from 'src/modules/device/dtos/create-device.dto';
-import { error } from 'console';
+import { WattsenseApiAuthenticator } from './helper/wattsense-api-authentication.service';
+import { WattsenseApiHelper } from './helper/wattsense-api-helper.service';
+import { WattsenseDeviceDto } from '../dtos/devices/wattsense-device.dto';
+import { WattsenseDeviceConfigDto } from '../dtos/devices/wattsense-device-config.dto';
+import { CreateDeviceDto } from '../dtos/devices/create-device.dto';
 @Injectable()
 export class WattsenseService {
   constructor(

@@ -76,7 +76,7 @@ export class CoilsService {
 
       modbusEquipment.closeConnection();
 
-      return { success: true };
+      
     } catch (error) {
       modbusEquipment.closeConnection();
 
