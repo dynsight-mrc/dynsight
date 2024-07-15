@@ -13,6 +13,6 @@ import { OrganizationServiceHelper } from './services/organization-helper.servic
  
   ],
   controllers: [OrganizationController],
-  exports:[OrganizationService,MongooseModule]
+  exports:[OrganizationService]
 })
 export class OrganizationModule {}

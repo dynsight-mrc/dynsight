@@ -7,6 +7,7 @@ import mongoose, { Types } from 'mongoose';
 @Injectable()
 export class UserServiceHelper {
   constructor(@InjectModel(User.name) private readonly userModel: UserModel) {}
+  
   checkAllUsersFieldsHasSameLength(usersData: CreateUsersDto) {
     let { firstName, lastName, password, email, role } = usersData;
 

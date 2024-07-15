@@ -1,14 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAccountDto } from '../dto/create-account.dto';
 import { UpdateAccountDto } from '../dto/update-account.dto';
-import { OrganizationService } from 'src/modules/organization/services/organization.service';
+import { OrganizationService } from '../../organization/services/organization.service';
 import mongoose, { Connection } from 'mongoose';
-import { RoomService } from 'src/modules/room/services/room.service';
+import { RoomService } from '@modules/room/services/room.service';
 import { InjectConnection } from '@nestjs/mongoose';
-import { BuildingService } from 'src/modules/building/services/building.service';
-import { FloorService } from 'src/modules/floor/services/floor.service';
-import { Building } from 'src/modules/building/models/building.model';
-import { UserService } from 'src/modules/user/services/user.service';
+import { BuildingService } from '@modules/building/services/building.service';
+import { FloorService } from '@modules/floor/services/floor.service';
+import { UserService } from '@modules/user/services/user.service';
+import { CreatedAccountDto } from '../dto/created-account.dto';
 
 @Injectable()
 export class AccountService {
@@ -20,7 +20,7 @@ export class AccountService {
     private readonly userService: UserService,
     @InjectConnection() private connection: Connection,
   ) {}
-  async create(createAccountDto: CreateAccountDto): Promise<any> {
+  async create(createAccountDto: CreateAccountDto): Promise<CreatedAccountDto> {
     let { organization, building, location, floors, blocs, users } =
       createAccountDto;
 
@@ -33,7 +33,7 @@ export class AccountService {
         organization,
         session,
       );
-
+  
       //create building
       let buildingDoc = await this.buildingService.create(
         {
@@ -41,24 +41,22 @@ export class AccountService {
           address: location,
           organizationId: new mongoose.Types.ObjectId(organizationDoc.id),
           //organizationId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083ce"),
-          
         },
         session,
       );
-      console.log('building id', buildingDoc.id);
 
       //create floors
       const floorsDocs = await this.floorService.createMany(
         {
-          //organizationId: organizationDoc.id,
-          organizationId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083ce"),
-          buildingId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083d0"),
-          //buildingId: buildingDoc.id,
+          organizationId: organizationDoc.id,
+          //organizationId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083ce"),
+          //buildingId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083d0"),
+          buildingId: buildingDoc.id,
           ...floors,
         },
         session,
       );
-
+        
       //create blocs
 
       const blocsDocs = await this.roomService.createMany(
@@ -76,16 +74,21 @@ export class AccountService {
         organizationDoc.id,
         session,
       );
-      console.log(usersDocs);
 
       await session.commitTransaction();
 
-      return { organizationDoc, buildingDoc, floorsDocs, blocsDocs };
+      return {
+        organization: organizationDoc,
+        building: buildingDoc,
+        floors: floorsDocs,
+        blocs: blocsDocs,
+        users: usersDocs,
+      };
     } catch (error) {
       await session.abortTransaction();
-      console.log(error);
 
-      if (error.status === 409) {
+      if (error.code === 409) {
+
         throw new HttpException(
           `Erreur s'est produite lors de la création du compte, ${error.message}`,
           HttpStatus.CONFLICT,
@@ -98,8 +101,6 @@ export class AccountService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     } finally {
-      console.log('finsiehd');
-
       session.endSession();
     }
   }

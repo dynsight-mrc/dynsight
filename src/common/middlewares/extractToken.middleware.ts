@@ -8,6 +8,7 @@ interface CustomRequest extends Request {
 @Injectable()
 export class ExtractToken implements NestMiddleware {
   use(req: CustomRequest, res: Response, next: NextFunction) {
+    
     const bearerHeader = req.headers['authorization'];
     // Check if bearer is undefined
     if (typeof bearerHeader !== 'undefined') {

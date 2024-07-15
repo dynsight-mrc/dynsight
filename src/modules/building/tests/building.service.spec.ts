@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BuildingService } from './building.service';
-import { BuildingServiceHelper } from './building-helper.service';
+import { BuildingService } from '../services/building.service';
+import { BuildingServiceHelper } from '../services/building-helper.service';
 import { Building, BuildingModel } from '../models/building.model';
 import { getModelToken } from '@nestjs/mongoose';
 import { InternalServerErrorException } from '@nestjs/common';
@@ -12,7 +12,8 @@ describe('BuildingService', () => {
   let buildngServiceHelper: BuildingServiceHelper;
   let buildingModel: BuildingModel;
   let mockBuilding = {
-    id: '620b48f4a4e10b001e6d2b3d',
+    id: new mongoose.Types.ObjectId('620b48f4a4e10b001e6d2b3d'),
+    organizationId:new mongoose.Types.ObjectId('668e6e2ddb4c17164be2d6a1'),
     reference: 'string',
     name: 'string',
     constructionYear: 2012,
@@ -84,7 +85,7 @@ describe('BuildingService', () => {
           streetName: 'Main St',
           city: 'Paris',
           state: 'Île-de-France',
-          postalCode: '75001',
+          postalCode: 75001,
           country: 'France',
           coordinates: {
             lat: 123,
@@ -120,7 +121,7 @@ describe('BuildingService', () => {
           streetName: 'Main St',
           city: 'Paris',
           state: 'Île-de-France',
-          postalCode: '75001',
+          postalCode: 75001,
           country: 'France',
           coordinates: {
             lat: 123,

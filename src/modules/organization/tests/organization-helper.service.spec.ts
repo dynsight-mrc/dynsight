@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrganizationServiceHelper } from './organization-helper.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Organization, OrganizationModel } from '../models/organization.model';
+import { OrganizationServiceHelper } from '../services/organization-helper.service';
 
 describe('Organization Service Helper', () => {
   const mockOrganizationModel = {

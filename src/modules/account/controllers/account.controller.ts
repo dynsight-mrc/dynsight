@@ -1,16 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus, HttpCode } from '@nestjs/common';
 import { AccountService } from '../services/account.service';
 import { CreateAccountDto } from '../dto/create-account.dto';
 import { UpdateAccountDto } from '../dto/update-account.dto';
-import { AuthorizationGuard } from 'src/common/guards/authorization.guard';
+import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
+import { CreatedAccountDto } from '../dto/created-account.dto';
 
-@Controller('account')
+@Controller('accounts')
 @UseGuards(AuthorizationGuard)
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Post()
-  create(@Body() createAccountDto: CreateAccountDto) {
+  @HttpCode(201)
+  create(@Body() createAccountDto: CreateAccountDto) :Promise<CreatedAccountDto>{
           return this.accountService.create(createAccountDto);   
   }
 

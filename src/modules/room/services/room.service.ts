@@ -39,7 +39,7 @@ export class RoomService {
     private readonly inputRegisterRepositoryService: InputRegistersRepositoryService, */
   ) {}
 
-  async findAll(): Promise<ReadRoomDto[]> {
+ /*  async findAll(): Promise<ReadRoomDto[]> {
     try {
       return await this.roomModel
         .find()
@@ -76,7 +76,7 @@ export class RoomService {
     } catch (error) {
       throw new Error(error.message);
     }
-  }
+  } */
 
   async findOne(id: string) {
     try {
@@ -103,7 +103,7 @@ export class RoomService {
     buildingId:Types.ObjectId,
     organizationId:Types.ObjectId,
     session: any,
-  ) {
+  ) :Promise<Room[]>{
     let roomsFormatedData 
     
     roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
@@ -119,11 +119,9 @@ export class RoomService {
       });
     
 
-      return blocsDocs;
+      return blocsDocs as undefined as Room[];
     } catch (error) {
       if (error.code === 11000) {
-        console.log('Un ou plusieurs blocs existent déja avec ces paramètres');
-
         throw new HttpException(
           'Un ou plusieurs blocs existent déja avec ces paramètres',
           HttpStatus.CONFLICT,

@@ -15,9 +15,6 @@ import {
 import { CreateBuildingDto } from '../dtos/create-building.dto';
 import { ReadBuildingDto } from '../dtos/read-building.dto';
 import { Building } from '../models/building.model';
-import { MongoExceptionFilter } from 'src/common/errors/mongo-exception-filter';
-
-@UseFilters(MongoExceptionFilter)
 
 @Controller('buildings')
 export class BuildingController {

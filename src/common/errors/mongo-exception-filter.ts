@@ -16,10 +16,8 @@ export class MongoExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-console.log("ùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùùù");
 
     if (exception.code === 11000) {
-        console.log( '**** Erreur: Une ressource avec ces détails existe déjà.');
         
         throw new HttpException(
           'Une ressource avec ces détails existe déjà.',

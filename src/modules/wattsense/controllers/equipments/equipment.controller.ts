@@ -1,3 +1,4 @@
+
 import { Controller } from '@nestjs/common';
 import {
     Body,
@@ -9,6 +10,7 @@ import {
   } from '@nestjs/common';
 import { EquipmentService } from '../../services/equipments/equipment.service';
 import { CreateEquipmentDto } from '../../dtos/equipments/create-equipment.dto';
+
 
 @Controller('equipments')
 export class EquipmentController {

@@ -4,25 +4,23 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
+
 } from '@nestjs/common';
 import { OrganizationService } from '../services/organization.service';
-import { AuthorizationGuard } from 'src/common/guards/authorization.guard';
+import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
 import { CreateOrganizationDto } from '../dtos/create-organization.dto';
 
-@Controller('organizations')
 @UseGuards(AuthorizationGuard)
+@Controller('organizations')
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
-
+  
   @Get('')
-  async findAll(): Promise<string[]> {
-    return await this.organizationService.findAll();
+  async findAll(): Promise<any[]> {
+    return this.organizationService.findAll();
   }
   @Post("")
   async create(@Body() createOrganizationDto: CreateOrganizationDto) {

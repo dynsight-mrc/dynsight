@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FloorServiceHelper } from './floor-helper.service';
+import { FloorServiceHelper } from '../services/floor-helper.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Floor, FloorModel } from '../models/floor.model';
 import mongoose from 'mongoose';

@@ -30,6 +30,7 @@ export class AuthenticationController {
           organization: 'string',
         },
       };
+      
       return {token:jwt.sign(user, process.env.JWTSECRET),...user};
     }
     if(userAuthCredentials.username==="oo@dynsight.fr"){

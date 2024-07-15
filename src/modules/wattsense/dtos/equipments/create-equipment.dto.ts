@@ -1,5 +1,6 @@
+import { ProtocolList } from '@common/wattsense/enums/protocol-list.enum';
 import { IsEnum, IsString } from 'class-validator';
-import { ProtocolList } from 'src/common/wattsense/enums/protocol-list.enum';
+
 
 export class CreateEquipmentDto {
   @IsString()

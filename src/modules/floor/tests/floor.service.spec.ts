@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FloorService } from './floor.service';
+import { FloorService } from '../services/floor.service';
 import { FloorModel } from '../models/floor.model';
 import { getModelToken } from '@nestjs/mongoose';
 import { Floor } from '../entities/floor.entity';
-import { FloorServiceHelper } from './floor-helper.service';
+import { FloorServiceHelper } from '../services/floor-helper.service';
 import mongoose from 'mongoose';
 import { HttpException, HttpStatus } from '@nestjs/common';
 

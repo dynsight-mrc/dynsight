@@ -19,6 +19,7 @@ import { AuthenticationModule } from './modules/authentication/authentication.mo
 import { ExtractToken } from './common/middlewares/extractToken.middleware';
 import { AccountModule } from './modules/account/account.module';
 import { UserModule } from './modules/user/user.module';
+import { MongodbModule } from './common/databaseConnections/mongodb.module';
 
 @Module({
   imports: [
@@ -27,8 +28,8 @@ import { UserModule } from './modules/user/user.module';
       isGlobal: true,
     }),
     //MongooseModule.forRoot('mongodb://dynsight-user:dynsight-user@38.242.254.49:60213/dynsight'),
-    MongooseModule.forRoot('mongodb://mongo-dynsight-1:27017,mongo-dynsight-2:27017,mongo-dynsight-3:27017/dynsight?replicaSet=myReplicaSet'),
-   
+    //MongooseModule.forRoot('mongodb://mongo-dynsight-1:27017,mongo-dynsight-2:27017,mongo-dynsight-3:27017/dynsight?replicaSet=myReplicaSet'),
+    MongodbModule,
     OrganizationModule,
     FloorModule,
     BuildingModule,
@@ -43,6 +44,6 @@ import { UserModule } from './modules/user/user.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ExtractToken).forRoutes('account', 'organizations', 'rooms');
+    consumer.apply(ExtractToken).forRoutes('accounts', 'organizations', 'rooms');
   }
 }

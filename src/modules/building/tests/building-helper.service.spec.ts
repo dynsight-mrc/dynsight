@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Building, BuildingModel } from '../models/building.model';
-import { BuildingServiceHelper } from './building-helper.service';
+import { BuildingServiceHelper } from '../services/building-helper.service';
 
 describe('Building Service Helper', () => {
   let buildngServiceHelper: BuildingServiceHelper;

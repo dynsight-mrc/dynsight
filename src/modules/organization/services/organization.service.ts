@@ -16,7 +16,7 @@ export class OrganizationService {
   async create(
     createOrganizationDto: CreateOrganizationDto,
     session?: any,
-  ): Promise<any> {
+  ): Promise<Organization> {
     let existingOrganization =
       await this.organizationServiceHelper.checkIfOrganizationExists(
         createOrganizationDto.name,
@@ -35,16 +35,14 @@ export class OrganizationService {
 
       return organizationDoc;
     } catch (error) {
-      console.log(error);
       
       if(error.code===11000){
-        console.log("Organisation existe déja avec ces paramètres");
         
         throw new HttpException(
           "Organisation existe déja avec ces paramètres",HttpStatus.CONFLICT
         );
       }
-      throw new Error(
+      throw new InternalServerErrorException(
         "Erreur lors de la création du l'organisation"
       );
     }

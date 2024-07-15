@@ -26,7 +26,7 @@ export class FloorService {
   ): Promise<Floor[]> {
     let floorsFormatedData =
       this.floorServiceHelper.formatFloorsRawData(createFloorsDto);
-
+    
     try {
       let floorsDocs = await this.floorModel.insertMany(floorsFormatedData, {
         session,
@@ -37,7 +37,6 @@ export class FloorService {
       
       
       if (error.code === 11000) {
-        console.log( 'Un ou plusieurs étages existent déja avec ces paramètres',);
         
         throw new HttpException(
           'Un ou plusieurs étages existent déja avec ces paramètres',
@@ -58,7 +57,6 @@ export class FloorService {
       }
       return false;
     } catch (error) {
-      console.log(error);
       throw new Error(error);
     }
   }

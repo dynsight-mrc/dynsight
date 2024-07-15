@@ -10,6 +10,7 @@ import { CreateBuildingDto } from '../dtos/create-building.dto';
 import { ReadBuildingDto } from '../dtos/read-building.dto';
 import { InjectModel } from '@nestjs/mongoose';
 
+
 @Injectable()
 export class BuildingService {
   constructor(
@@ -28,15 +29,15 @@ export class BuildingService {
 
       return buildingDoc;
     } catch (error) {
+      
       if(error.code===11000){
-        console.log( "Nom d'immeuble existe déja dans cet organisation");
         
         throw new HttpException(
           "Immeuble existe déja avec ces paramètres",HttpStatus.CONFLICT
         );
       }
       throw new InternalServerErrorException(
-        "Erreur lors de la création du l'organisation"
+        "Erreur lors de la création de l'immeuble"
       );
        
     }

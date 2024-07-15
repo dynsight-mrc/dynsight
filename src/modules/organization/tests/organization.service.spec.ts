@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrganizationService } from './organization.service';
+import { OrganizationService } from '../services/organization.service';
 import { Organization, OrganizationModel } from '../models/organization.model';
-import mongoose, { Model, Mongoose } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
-import { OrganizationServiceHelper } from './organization-helper.service';
-import { InternalServerErrorException } from '@nestjs/common';
 import { CreateOrganizationDto } from '../dtos/create-organization.dto';
+import { OrganizationServiceHelper } from '../services/organization-helper.service';
 
 describe('OrganizationService', () => {
   let organizationService: OrganizationService;

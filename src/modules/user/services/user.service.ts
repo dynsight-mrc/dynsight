@@ -27,7 +27,6 @@ export class UserService {
       buildingId,
       organizationId,
     );
-      console.log(usersFormatedData);
       
     try {
       let usersDocs = await this.userModel.insertMany(usersFormatedData,{session});
@@ -35,7 +34,6 @@ export class UserService {
     } catch (error) {
       console.log(error);
       if (error.code === 11000) {
-        console.log('Un ou plusieurs blocs existent déja avec ces paramètres');
 
         throw new HttpException(
           'Un utilisateur existent déja avec ces paramètres',

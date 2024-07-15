@@ -36,6 +36,7 @@ export class RoomServiceHelper {
     if (Array.from(new Set(name)).length !== name.length) {
       throw new Error('Noms des blocs doivent etre uniques');
     }
+
     
     //CHECK IF CREATED FLOORS PROVIDED HAS INCLUDES NAMES FROM THE BLOCS ASSOCIATED FLOORS
     if(!floors.map(ele=>floorsDocs.map(ele=>ele.name).includes(ele)).every(ele=>ele===true)){
