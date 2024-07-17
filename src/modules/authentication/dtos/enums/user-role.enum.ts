@@ -1,5 +1,1 @@
-export enum UserRole {
-    ROOT="Root",
-    ADMIN="Admin",
-    USER="USER"
-}
+export type UserRole = 'Root' | 'Admin' | 'OO' | 'CO' | 'FM' | 'PM' | 'AM';

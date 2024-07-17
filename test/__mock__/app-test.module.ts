@@ -1,6 +1,6 @@
 import { ExtractToken } from '@common/middlewares/extractToken.middleware';
 import { AccountModule } from '@modules/account/account.module';
-import { AuthenticationController } from '@modules/authentication/controllers/authentication.controller';
+import { AuthenticationModule } from '@modules/authentication/authentication.module';
 import { BuildingModule } from '@modules/building/building.module';
 import { FloorModule } from '@modules/floor/floor.module';
 import { OrganizationModule } from '@modules/organization/organization.module';
@@ -28,13 +28,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     RoomModule,
     UserModule,
     AccountModule,
+    AuthenticationModule
   ],
-  controllers: [AuthenticationController],
 })
 export class AppTestModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ExtractToken)
-      .forRoutes('accounts', 'organizations', 'rooms',"floors","users");
+      .forRoutes('account', 'organizations', 'rooms',"floors","users");
   }
 }

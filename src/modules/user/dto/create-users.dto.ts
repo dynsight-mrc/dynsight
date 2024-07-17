@@ -2,15 +2,11 @@ import {
   ArrayMinSize,
   ArrayNotEmpty,
   IsArray,
-  IsIn,
-  IsInt,
-  IsMongoId,
-  IsNotEmpty,
-  IsOptional,
+
   IsString,
-  ValidateNested,
+
 } from 'class-validator';
-import { Types } from 'mongoose';
+import { UserRole } from './user.dto';
 
 export class CreateUsersDto {
   @IsArray()
@@ -41,5 +37,5 @@ export class CreateUsersDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  role: string[];
+  role: UserRole[];
 }

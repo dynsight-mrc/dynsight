@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import * as UserDtos from '../dtos/user.dto'
 
 type UserAttrs = {
@@ -66,7 +66,7 @@ class Preferences extends Document {
 }
 
 @Schema()
-class User extends Document {
+export class User extends Document {
   personalInformation: PersonalInformation;
   contactInformation: ContactInformation;
   authentication: Authentication;
@@ -75,14 +75,14 @@ class User extends Document {
   preferences: Preferences;
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema2 = SchemaFactory.createForClass(User);
 
-UserSchema.set('toJSON', {
+UserSchema2.set('toJSON', {
   transform: (doc, ret) => {
     (ret.id = doc._id), delete ret._id;
   },
 });
 
-UserSchema.statics.build = function (attrs: UserAttrs) {
+UserSchema2.statics.build = function (attrs: UserAttrs) {
   return new this(attrs);
 };

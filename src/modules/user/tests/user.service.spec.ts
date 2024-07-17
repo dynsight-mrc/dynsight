@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from '../services/user.service';
 import { UserServiceHelper } from '../services/user-helper.service';
-import { User, UserModel } from '../models/user.model';
+import { UserAccount, UserAccountModel } from '../models/user.model';
 import { getModelToken } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { CreateUsersDto } from '../dto/create-users.dto';
@@ -9,7 +9,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 describe('UserService', () => {
   let userService: UserService;
-  let userModel: UserModel;
+  let userModel: UserAccountModel;
   let mockOrganizationId = new mongoose.Types.ObjectId(
     '668e8c274bf69a2e53bf59f1',
   );
@@ -46,17 +46,17 @@ describe('UserService', () => {
   };
   let mockUserModel = { insertMany: jest.fn() };
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
         { provide: UserServiceHelper, useValue: mockUserServiceHelper },
-        { provide: getModelToken(User.name), useValue: mockUserModel },
+        { provide: getModelToken(UserAccount.name), useValue: mockUserModel },
       ],
     }).compile();
 
     userService = module.get<UserService>(UserService);
-    userModel = module.get<UserModel>(getModelToken(User.name));
+    userModel = module.get<UserAccountModel>(getModelToken(UserAccount.name));
   });
 
   it('should be defined', () => {
@@ -70,7 +70,7 @@ describe('UserService', () => {
         lastName: ['last name 1', 'last name 2'],
         password: ['password', 'password'],
         email: ['email@dynsight.com', 'email2@dynsight.com'],
-        role: ['OO', 'FM'],
+        role: ['organization-owner', 'facility-manager'],
       };
       let session = {};
 
@@ -96,7 +96,7 @@ describe('UserService', () => {
         lastName: ['last name 1', 'last name 2'],
         password: ['password', 'password'],
         email: ['email@dynsight.com', 'email2@dynsight.com'],
-        role: ['OO', 'FM'],
+        role: ['organization-owner', 'facility-manager'],
       };
       let session = {};
 
@@ -122,7 +122,7 @@ describe('UserService', () => {
         lastName: ['last name 1', 'last name 2'],
         password: ['password', 'password'],
         email: ['email@dynsight.com', 'email2@dynsight.com'],
-        role: ['OO', 'FM'],
+        role: ['organization-owner', 'facility-manager'],
       };
       let session = {};
       let mockReturnedValue = mockFormtedUsersData.map((ele) => ({

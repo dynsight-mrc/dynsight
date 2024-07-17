@@ -133,7 +133,7 @@ describe('AccountService', () => {
       lastName: ['lastname 1'],
       email: ['email@dynsight.fr'],
       password: ['password'],
-      role: ['OO'],
+      role: ['organization-owner'],
     },
     organization: {
       reference: 'MINE pro max',

@@ -26,8 +26,7 @@ export class AccountService {
 
     const session = await this.connection.startSession();
     session.startTransaction();
-    console.log('start session');
-
+    
     try {
       const organizationDoc = await this.organizationService.create(
         organization,
@@ -74,7 +73,8 @@ export class AccountService {
         organizationDoc.id,
         session,
       );
-
+        
+        
       await session.commitTransaction();
 
       return {

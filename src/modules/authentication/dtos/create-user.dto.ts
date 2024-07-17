@@ -3,13 +3,15 @@ import * as UserDtos from './user.dto';
 
 import {
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { UserRole } from './enums/user-role.enum';
-import { UserGender } from './enums/user-gender.enum';
+import { Types } from 'mongoose';
+import { UserGender } from '@modules/user/dto/enums/user-gender.enum';
+import { UserRole } from '@modules/user/dto/user.dto';
 
 
 
@@ -19,15 +21,15 @@ class PersonalInformationDto {
   @IsString()
   lastName: string;
   @IsEnum(UserGender)
-  gender: UserGender;
+  gender?: UserGender|string;
   @IsString()
-  dateOfBirth: string;
+  dateOfBirth?: string;
 }
 class ContactInformationDto {
   @IsString()
-  address: string;
+  address?: string;
   @IsString()
-  phone: string;
+  phone?: string;
   @IsString()
   email: string;
 }
@@ -38,20 +40,24 @@ class AuthenticationDto {
   password: string;
 }
 class PermissionsDto {
-  @IsEnum(UserRole)
-  role: UserRole;
   @IsString()
-  organization:string
+  role: UserRole;
+  @IsMongoId()
+  organizationId:Types.ObjectId
+  @IsMongoId()
+  floorId?:Types.ObjectId
+  @IsMongoId()
+  buildingId?:Types.ObjectId
 }
 class ProfileInformationDto {
   @IsString()
-  picture: string;
+  picture?: string;
 }
 class PreferencesDto {
   @IsString()
-  language: string;
+  language?: string;
   @IsString()
-  theme: string;
+  theme?: string;
 }
 
 export class CreateUserDto {
@@ -78,10 +84,10 @@ export class CreateUserDto {
   @IsOptional()
   @ValidateNested()
   @Type(() => ProfileInformationDto)
-  profileInformation: ProfileInformationDto;
+  profileInformation?: ProfileInformationDto;
 
   @IsOptional()
   @ValidateNested()
   @Type(() => PreferencesDto)
-  prefrences: PreferencesDto;
+  preferences?: PreferencesDto|undefined;
 }

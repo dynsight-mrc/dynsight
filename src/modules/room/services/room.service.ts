@@ -102,11 +102,10 @@ export class RoomService {
     floors: Floor[],
     buildingId:Types.ObjectId,
     organizationId:Types.ObjectId,
-    session: any,
+    session?: any,
   ) :Promise<Room[]>{
-    let roomsFormatedData 
     
-    roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
+     let roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
       createRoomsDto,
       floors,
       buildingId,

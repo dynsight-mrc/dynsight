@@ -1,7 +1,8 @@
 
+import { UserRole } from '@modules/user/dto/user.dto';
+import { Type } from 'class-transformer';
 import { IsString, IsNumber, IsArray, IsObject, ValidateNested, IsEmail, IsOptional, ArrayNotEmpty, ArrayMinSize, IsInt, IsMongoId } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { Types } from 'mongoose';
+
 
 
 
@@ -139,7 +140,7 @@ class UserDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  role: string[];
+  role: UserRole[];
 }
 
 

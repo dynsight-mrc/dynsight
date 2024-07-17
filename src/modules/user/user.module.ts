@@ -3,19 +3,25 @@ import { UserService } from './services/user.service';
 import { UserController } from './controllers/user.controller';
 import { UserServiceHelper } from './services/user-helper.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from './models/user.model';
+import { UserAccount, UserSchema } from './models/user.model';
+import { PasswordServiceHelper } from './services/password-helper.service';
+import { Admin, AdminSchema } from './models/admin.model';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       {
-        name: User.name,
+        name: UserAccount.name,
         schema: UserSchema,
+      },
+      {
+        name: Admin.name,
+        schema: AdminSchema,
       },
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService, UserServiceHelper],
+  providers: [UserService, UserServiceHelper,PasswordServiceHelper],
   exports:[UserService]
 })
 export class UserModule {}

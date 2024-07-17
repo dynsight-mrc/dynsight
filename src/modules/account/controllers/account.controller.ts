@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
 import { AccountService } from '../services/account.service';
 import { CreateAccountDto } from '../dto/create-account.dto';
 import { UpdateAccountDto } from '../dto/update-account.dto';
@@ -12,8 +24,10 @@ export class AccountController {
 
   @Post()
   @HttpCode(201)
-  create(@Body() createAccountDto: CreateAccountDto) :Promise<CreatedAccountDto>{
-          return this.accountService.create(createAccountDto);   
+  create(
+    @Body() createAccountDto: CreateAccountDto,
+  ): Promise<CreatedAccountDto> {
+    return this.accountService.create(createAccountDto);
   }
 
   @Get()

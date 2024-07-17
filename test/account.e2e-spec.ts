@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, MiddlewareConsumer} from '@nestjs/common';
+import { HttpException, INestApplication, MiddlewareConsumer } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { CreateAccountDto } from '@modules/account/dto/create-account.dto';
@@ -12,7 +12,6 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppTestModule } from './__mock__/app-test.module';
 import { CreatedAccountDto } from '@modules/account/dto/created-account.dto';
 
-
 describe('Account (e2e)', () => {
   let app: INestApplication;
   let createAccountDto: CreateAccountDto = {
@@ -24,8 +23,8 @@ describe('Account (e2e)', () => {
       type: 'commercial',
     },
     floors: {
-      name: ['etage 1',"etage 2",'etage 3'],
-      number: [1,2, 3],
+      name: ['etage 1', 'etage 2', 'etage 3'],
+      number: [1, 2, 3],
     },
     blocs: {
       name: ['bloc 1', 'bloc 2'],
@@ -38,7 +37,7 @@ describe('Account (e2e)', () => {
       lastName: ['lastname 1'],
       email: ['emailz@dynsight.fr'],
       password: ['password'],
-      role: ['OO'],
+      role: ['organization-owner'],
     },
     organization: {
       reference: 'MINE pro max',
@@ -60,71 +59,72 @@ describe('Account (e2e)', () => {
       },
     },
   };
-  let connection:Connection
-  let replSet:MongoMemoryReplSet
+  let connection: Connection;
+  let replSet: MongoMemoryReplSet;
   beforeAll(async () => {
     replSet = await MongoMemoryReplSet.create({
       replSet: { count: 1 },
     });
 
     const uri = replSet.getUri();
-    console.log(uri);
-    
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppTestModule,MongooseModule.forRoot(uri)],
+      imports: [AppTestModule, MongooseModule.forRoot(uri)],
     })
-    .overrideGuard(AuthorizationGuard)
-    .useClass(MockGuard)
-    .compile();
+      .overrideGuard(AuthorizationGuard)
+      .useClass(MockGuard)
+      .compile();
 
     app = moduleFixture.createNestApplication();
-    const appModule = app.get(AppTestModule)
-    appModule.configure=(consumer)=>{
-        consumer.apply(MockExtractToken).forRoutes('accounts', 'organizations', 'rooms')
-    }
+    const appModule = app.get(AppTestModule);
+    appModule.configure = (consumer) => {
+      consumer
+        .apply(MockExtractToken)
+        .forRoutes('accounts', 'organizations', 'rooms');
+    };
 
     //app.use(["/organizations"],new MockExtractToken().use)
     await app.init();
 
-    connection = moduleFixture.get<Connection>(getConnectionToken())
-      
+    connection = moduleFixture.get<Connection>(getConnectionToken());
   });
 
-    it('/(POST) Request to create new account ', async() => {
-     await request(app.getHttpServer())
+  it('/(POST) Request to create new account ', async () => {
+    await request(app.getHttpServer())
       .post('/accounts')
       .send(createAccountDto)
       .expect(201)
       .then((res) => {
-        let account:CreatedAccountDto = res.body
-        expect(account).toBeDefined()
-        expect(account.blocs.length).toEqual(2)
-        expect(account.floors.length).toEqual(3)
-        expect(account.users.length).toEqual(1)
-        expect(account.building.organizationId).toEqual(account.organization.id)
-        account.floors.forEach(floor=>{
-          expect(floor.buildingId).toEqual(account.building.id)
-          expect(floor.organizationId).toEqual(account.organization.id)
-        })
+        let account: CreatedAccountDto = res.body;
+        expect(account).toBeDefined();
+        expect(account.blocs.length).toEqual(2);
+        expect(account.floors.length).toEqual(3);
+        expect(account.users.length).toEqual(1);
+        expect(account.users[0].personalInformation).toBeDefined();
+        expect(account.users[0].contactInformation).toBeDefined();
+        expect(account.users[0].permissions).toBeDefined();
+        expect(account.users[0].authentication).toBeDefined();
+        expect(account.building.organizationId).toEqual(
+          account.organization.id,
+        );
+        account.floors.forEach((floor) => {
+          expect(floor.buildingId).toEqual(account.building.id);
+          expect(floor.organizationId).toEqual(account.organization.id);
+        });
         account.blocs.forEach((bloc, index) => {
           expect(bloc.organizationId).toEqual(account.organization.id);
           expect(bloc.buildingId).toEqual(account.building.id);
           let floorName = createAccountDto.blocs.floors.find(
             (_, indexFloor) => index === indexFloor,
           );
-    
+
           let floor = account.floors.find((floor) => floor.name === floorName);
-    
+
           expect(bloc.floorId).toEqual(floor.id);
         });
-        
       });
 
-     
-      return
+    return;
   });
 
-  
-
-  
 });

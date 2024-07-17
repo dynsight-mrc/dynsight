@@ -1,28 +1,31 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreateUserDto } from '../dto/create-user.dto';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUsersDto } from '../dto/create-users.dto';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { UserServiceHelper } from './user-helper.service';
-import { User, UserModel } from '../models/user.model';
+import { UserAccount, UserAccountModel } from '../models/user.model';
 import { InjectModel } from '@nestjs/mongoose';
+
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: UserModel,
+    @InjectModel(UserAccount.name) private readonly userModel: UserAccountModel,
     private readonly userServiceHelper: UserServiceHelper,
   ) {}
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
+
   async createMany(
     createUsersDto: CreateUsersDto,
     buildingId: Types.ObjectId,
     organizationId: Types.ObjectId,
-    session: any,
-  ) :Promise<User[]>{
-    let usersFormatedData = this.userServiceHelper.formatUsersRawData(
+    session?: any,
+  ): Promise<UserAccount[]> {
+    let usersFormatedData = await this.userServiceHelper.formatUsersRawData(
       createUsersDto,
       buildingId,
       organizationId,
@@ -30,11 +33,11 @@ export class UserService {
       
     try {
       let usersDocs = await this.userModel.insertMany(usersFormatedData,{session});
-      return usersDocs
+     
+      return usersDocs as undefined as UserAccount[];
     } catch (error) {
-      console.log(error);
-      if (error.code === 11000) {
 
+      if (error.code === 11000) {
         throw new HttpException(
           'Un utilisateur existent déja avec ces paramètres',
           HttpStatus.CONFLICT,
@@ -44,8 +47,9 @@ export class UserService {
         'Erreur lors de la création des utilisateurs',
       );
     }
-
   }
+ 
+ 
   findAll() {
     return `This action returns all user`;
   }

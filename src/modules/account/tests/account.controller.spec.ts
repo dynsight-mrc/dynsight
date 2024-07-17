@@ -129,7 +129,7 @@ describe('AccountController', () => {
       lastName: ['lastname 1'],
       email: ['email@dynsight.fr'],
       password: ['password'],
-      role: ['OO'],
+      role: ['organization-owner'],
     },
     organization: {
       reference: 'MINE pro max',
@@ -171,7 +171,7 @@ describe('AccountController', () => {
   });
   describe('Create account', () => { 
     it("should return object with all entities of the created account",async()=>{
-      let account = await accountService.create(createAccountDto)
+      let account = await accountController.create(createAccountDto)
       expect(accountService.create).toHaveBeenCalledWith(createAccountDto)
       expect(account).toEqual(mockCreatedAccount)
     })

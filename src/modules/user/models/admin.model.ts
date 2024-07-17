@@ -4,20 +4,24 @@ import * as UserDtos from '../dto/user.dto';
 import { Organization } from '../../organization/models/organization.model';
 import { Building } from '../../building/models/building.model';
 import { Floor } from '../../floor/models/floor.model';
-import { UserRole } from '../dto/enums/user-role.enum';
 
-interface UserAttrs {
-  personalInformation: UserDtos.PersonalInformationDto;
-  contactInformation: UserDtos.ContactInformationDto;
-  authentication: UserDtos.AuthenticationDto;
-  permissions: UserDtos.PermissionsDto;
-  profileInformation?: UserDtos.ProfileInformationDto;
-  preferences?: UserDtos.PreferencesDto;
+interface AdminAttrs {
+  details: UserDtos.PersonalInformationDto;
 }
 
-export interface UserAccountModel extends Model<UserAccount> {
-  
-  build(attrs: UserAttrs): UserAccount;
+@Schema({ _id: false })
+class Details extends Document {
+  @Prop({ type: String, required: true })
+  firstName: string;
+  @Prop({ type: String, required: true })
+  lastName: string;
+  @Prop({ enum: UserDtos.Gender })
+  gender?: UserDtos.Gender;
+  @Prop({ type: String })
+  deteOfBirth?: string;
+}
+export interface AdminModel extends Model<Admin> {
+  build(attrs: AdminAttrs): Admin;
 }
 
 @Schema({ _id: false })
@@ -79,7 +83,7 @@ class Preferences extends Document {
   theme?: string;
 }
 @Schema()
-export class UserAccount extends Document {
+export class Admin extends Document {
   @Prop({ type: PersonalInformation })
   personalInformation: PersonalInformation;
   @Prop({ type: ContactInformation,  })
@@ -95,16 +99,17 @@ export class UserAccount extends Document {
   @Prop({ type: Preferences, default: undefined })
   preferences?: Preferences;
 }
-export const UserSchema = SchemaFactory.createForClass(UserAccount);
+export const AdminSchema = SchemaFactory.createForClass(Admin);
 
 
-UserSchema.set('toJSON', {
+AdminSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = doc._id;
     delete ret._id;
   },
 });
 
-UserSchema.statics.build = function (attrs: UserAttrs) {
+AdminSchema.statics.build = function (attrs: AdminAttrs) {
   return new this(attrs);
 };
+
