@@ -26,4 +26,11 @@ export class OrganizationServiceHelper {
       );
     }
   }
+
+  async mapAsync (arr:any,fn:any):Promise<any[]>{
+    
+    
+    return Promise.all(arr.map(fn))
+  }
+  
 }

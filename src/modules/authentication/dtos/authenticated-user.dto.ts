@@ -1,4 +1,4 @@
-import { CreateUserDto } from './create-user.dto';
+import { CreateUserDto } from '@modules/user/dto/create-user.dto';
 import { IntersectionType } from '@nestjs/mapped-types';
 
 class TokenDto {

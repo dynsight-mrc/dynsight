@@ -10,7 +10,7 @@ import {
   IsMongoId,
   IsInt,
 } from 'class-validator';
-import { ObjectId, Types } from 'mongoose';
+import {  Types } from 'mongoose';
 
 class CoordinatesDto {
   @IsNumber()
@@ -20,7 +20,7 @@ class CoordinatesDto {
   long: number;
 }
 
-class AddressDto{
+export class AddressDto{
   @IsString()
   streetAddress: string;
   @IsString()

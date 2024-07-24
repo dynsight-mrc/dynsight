@@ -3,7 +3,7 @@ import { BuildingService } from '../services/building.service';
 import { BuildingServiceHelper } from '../services/building-helper.service';
 import { Building, BuildingModel } from '../models/building.model';
 import { getModelToken } from '@nestjs/mongoose';
-import { InternalServerErrorException } from '@nestjs/common';
+import { HttpException, InternalServerErrorException } from '@nestjs/common';
 import { CreateBuildingDto } from '../dtos/create-building.dto';
 import mongoose, { mongo } from 'mongoose';
 
@@ -35,20 +35,23 @@ describe('BuildingService', () => {
     save: jest.fn().mockResolvedValue(true),
   };
 
-  let mockBuildingService = {
+  let mockBuildingModel = {
     findOne: jest.fn(),
     build: jest.fn().mockReturnValue(mockBuilding),
+    find:jest.fn(),
+    select:jest.fn()
   };
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BuildingService,
         BuildingServiceHelper,
         {
           provide: getModelToken(Building.name),
-          useValue: mockBuildingService,
+          useValue: mockBuildingModel,
         },
+
       ],
     }).compile();
 
@@ -101,7 +104,7 @@ describe('BuildingService', () => {
         );
       }
     });
-    it('should create new building if it does ot exisrs', async () => {
+    it('should create new building if it does ot exists', async () => {
       jest
         .spyOn(buildngServiceHelper, 'checkIfBuildingExists')
         .mockResolvedValue(false);
@@ -139,4 +142,72 @@ describe('BuildingService', () => {
       expect(createdBuilding).toEqual(mockBuilding);
     });
   });
+
+  describe('Get buildings by Organization Id', () => { 
+    it('should throw an error if could not return the buildings for any reasosn', async () => {
+      let mockOrganizationId = new mongoose.Types.ObjectId();
+
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.select.mockRejectedValueOnce(new Error(''));
+
+      try {
+        await buildingService.findByOrganizationId(mockOrganizationId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.status).toEqual(500);
+        expect(error.message).toEqual(
+          "Erreur s'est produite lors de la récupération  des données de l'immeuble",
+        );
+      }
+    });
+    it('should return empty array if no building was found', async () => {
+      let mockOrganizationId = new mongoose.Types.ObjectId();
+      let mockReturneValue = [];
+
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.select.mockResolvedValue(mockReturneValue);
+
+      let buildings = await buildingService.findByOrganizationId(mockOrganizationId);
+
+      expect(mockBuildingModel.find).toHaveBeenCalledWith({
+        organizationId: mockOrganizationId,
+      });
+      expect(mockBuildingModel.select).toHaveBeenCalledWith(
+        { organizationId: 0 }
+      );
+      expect(buildings.length).toEqual(0);
+    });
+    it('should return a list of buildings', async () => {
+     
+     
+      let mockOrganizationId = new mongoose.Types.ObjectId();
+      let buildingsData = [
+        {
+          reference: 'BAT_1',
+          name: 'Mobile Corporation',
+          constructionYear: 2020,
+          surface: 125,
+          address: {},
+          type: 'commercial',
+          id: new mongoose.Types.ObjectId(),
+          
+        },
+        
+      ]
+      let mockReturneValue = buildingsData.map(ele=>({toJSON:()=>ele}))
+      
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.select.mockResolvedValueOnce(mockReturneValue);
+
+      let buildings = await buildingService.findByOrganizationId(mockOrganizationId);
+      expect(mockBuildingModel.find).toHaveBeenCalledWith({
+        organizationId: mockOrganizationId,
+      });
+      expect(mockBuildingModel.select).toHaveBeenCalledWith({
+        organizationId:0
+      });
+      expect(buildings.length).toEqual(1)
+      expect(buildings).toEqual(buildingsData);
+    });
+   })
 });

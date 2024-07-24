@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, INestApplication, MiddlewareConsumer } from '@nestjs/common';
+import {  INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
 import { CreateAccountDto } from '@modules/account/dto/create-account.dto';
-import { AuthorizationGuard } from '@common/guards/authorization.guard';
 import { Connection } from 'mongoose';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { MockGuard } from './__mock__/mockGuard';
-import { MockExtractToken } from './__mock__/mockExtractTokenMiddleware';
+import { MockGuard } from '../__mock__/mockGuard';
+import { MockExtractToken } from '../__mock__/mockExtractTokenMiddleware';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { AppTestModule } from './__mock__/app-test.module';
+import { AppTestModule } from '../__mock__/app-test.module';
 import { CreatedAccountDto } from '@modules/account/dto/created-account.dto';
+import { AuthorizationGuard } from '@common/guards/authorization.guard';
+
 
 describe('Account (e2e)', () => {
   let app: INestApplication;

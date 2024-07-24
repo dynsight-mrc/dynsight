@@ -27,7 +27,6 @@ export class RoomServiceHelper {
 
   formatRoomsRawData(roomsData: CreateRoomsDto,floorsDocs:Floor[],buildingId:Types.ObjectId,organizationId:Types.ObjectId): CreateRoomDtoV2[] {
     let { name, floors, type, surface } = roomsData;
-    //console.log([name.length,floors.length, type.length, surface.length ].map((val,index,arr)=>val===arr[0]).reduce((acc,val)=>acc&&val,true));
     
     if(!this.checkAllRoomsFieldsHasSameLength(roomsData)){     
       throw new Error('Inadéquation des valeurs des blocs');

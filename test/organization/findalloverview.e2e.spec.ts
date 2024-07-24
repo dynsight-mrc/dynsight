@@ -1,22 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  HttpException,
-  INestApplication,
-} from '@nestjs/common';
+import { HttpException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { Connection } from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { AppTestModule } from './__mock__/app-test.module';
-import { error } from 'console';
+import { AppTestModule } from '../__mock__/app-test.module';
 
 describe('Authentication Signin (e2e)', () => {
   let app: INestApplication;
-  let mockUserCredentials = {
-    username: 'test@test.com',
-    password: 'test@test.com',
-  };
+
   let connection: Connection;
 
   let replSet: MongoMemoryReplSet;
@@ -32,24 +25,21 @@ describe('Authentication Signin (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-  
+
     await app.init();
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
   });
-
+  beforeEach(async () => {
+    // Drop all collections before each test
+    const collections = await connection.db.collections();
+    for (let collection of collections) {
+      await collection.drop();
+    }
+  });
   describe('Authenticatin /(POST) Request to signin', () => {
-    it(' should throw error if user desnt exist ', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/signin')
-        .send(mockUserCredentials)
-        .catch(error=>{
-            expect(error).toBeFalsy();
- 
-        })
+    it.todo("should return a list of organizations (overview/brief)")
+    it.todo("should return error if could not retrieve the list of organizations")
 
-      return;
-    });
-    
   });
 });

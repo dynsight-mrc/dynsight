@@ -6,8 +6,8 @@ export enum Gender {
   FEMALE = 'Female',
 }
 export type UserRole =
-  | 'Root'
-  | 'Admin'
+  | 'root'
+  | 'admin'
   | 'organization-owner'
   | 'company-occupant'
   | 'facility-manager'
@@ -32,7 +32,7 @@ export type AuthenticationDto = {
 };
 export type PermissionsDto = {
   role: UserRole | string;
-  organizationId: Types.ObjectId;
+  organizationId?: Types.ObjectId;
   buildingId?: Types.ObjectId;
   floorId?: Types.ObjectId;
 };

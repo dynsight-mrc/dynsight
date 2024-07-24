@@ -1,24 +1,29 @@
+import { CreateUserDto } from '@modules/user/dto/create-user.dto';
 import { UserAccount, UserAccountModel } from '@modules/user/models/user.model';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { PasswordServiceHelper } from './password-helper.service';
 
 @Injectable()
 export class AuthenticationService {
   constructor(
     @InjectModel(UserAccount.name) private readonly userModel: UserAccountModel,
+    private readonly passwordServiceHelper: PasswordServiceHelper,
   ) {}
 
   async findOne(email: string): Promise<UserAccount | null> {
     try {
-      let user = await this.userModel.findOne({
-        'authentication.username': email,
-      }).lean();
-      
+      let user = await this.userModel
+        .findOne({
+          'authentication.username': email,
+        })
+        .lean();
+
       if (user) {
-        return user
+        return user;
       }
-      
+
       return null;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -27,27 +32,21 @@ export class AuthenticationService {
     }
   }
 
-  async createOne() {
-    let doc =  this.userModel.build({
-      personalInformation: {
-        firstName: 'user 1',
-        lastName: 'last name 1',
-      },
-      contactInformation: {
-        email: 'email@dynsight.com',
-      },
-      authentication: {
-        username: 'email@dynsight.com',
-        password:
-          '$2b$10$jw9p2GsawKJOew49BFmYNOIYQ4DnghA68oxImkyMIl9F7G2vrY2qS',
-      },
-      permissions: {
-        role: 'OO',
-        organizationId: new mongoose.Types.ObjectId('6695701b4a5c208180bcfb0b'),
-        buildingId: new mongoose.Types.ObjectId('6695701b4a5c208180bcfb0a'),
-      },
-    })
-    doc.save()
-    return doc
+  async createOne(createUserDto: CreateUserDto): Promise<UserAccount> {
+    let passwordHash = await this.passwordServiceHelper.createPasswordHash(
+      createUserDto.authentication.password,
+    );
+    let newAuthentication = {
+      username: createUserDto.authentication.username,
+      password: passwordHash,
+    };
+    createUserDto.authentication = newAuthentication;
+    try {
+      let doc = this.userModel.build(createUserDto);
+      await doc.save();
+      return doc;
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

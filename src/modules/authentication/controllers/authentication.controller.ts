@@ -11,6 +11,8 @@ import { UserAuthCredentials } from '../dtos/user-auth-credentials.dto';
 import * as jwt from 'jsonwebtoken';
 import { AuthenticationService } from '../services/authentication.service';
 import { PasswordServiceHelper } from '../services/password-helper.service';
+import { AuthenticatedUserDto } from '../dtos/authenticated-user.dto';
+import { CreateUserDto } from '@modules/user/dto/create-user.dto';
 
 @Controller('auth')
 export class AuthenticationController {
@@ -87,7 +89,7 @@ export class AuthenticationController {
     //return null
   } */
   @Post('signin')
-  async signin(@Body() userAuthCredentials: UserAuthCredentials): Promise<any> {
+  async signin(@Body() userAuthCredentials: UserAuthCredentials): Promise<AuthenticatedUserDto> {
     let user = await this.authenticationService.findOne(
       userAuthCredentials.username,
     );
@@ -113,7 +115,8 @@ export class AuthenticationController {
   }
 
   @Post('signup')
-  signup() {
-    return this.authenticationService.createOne();
+  async signup(@Body() createUserDto:CreateUserDto) {
+    let user = await this.authenticationService.createOne(createUserDto);
+    return user
   }
 }

@@ -10,10 +10,10 @@ import { OrganizationModule } from '../organization/organization.module';
   imports:[MongooseModule.forFeature([{
     name:Building.name,
     schema:BuildingSchema
-  }]),OrganizationModule],
+  }])],
   providers: [BuildingService,BuildingServiceHelper],
   controllers: [BuildingController],
-  exports:[BuildingService,MongooseModule]
+  exports:[BuildingService]
 
 })
 export class BuildingModule {}

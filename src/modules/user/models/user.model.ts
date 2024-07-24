@@ -56,8 +56,8 @@ class Permissions extends Document {
   @Prop({ type: String, required: true })
   role: UserDtos.UserRole;
 
-  @Prop({ type: Types.ObjectId, ref: Organization.name, required: true })
-  organizationId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: Organization.name })
+  organizationId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: Building.name })
   buildingId?: Types.ObjectId;

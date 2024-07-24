@@ -21,8 +21,6 @@ import { WattsenseModule } from '../wattsense/wattsense.module';
       },
     ]),
     WattsenseModule,
-    BuildingModule,
-    OrganizationModule,
     ModbusModule
   ],
   exports:[RoomService],

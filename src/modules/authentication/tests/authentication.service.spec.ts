@@ -3,16 +3,20 @@ import { AuthenticationService } from '../services/authentication.service';
 import { UserAccount, UserAccountModel } from '@modules/user/models/user.model';
 import { getModelToken } from '@nestjs/mongoose';
 import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { PasswordServiceHelper } from '../services/password-helper.service';
+import { CreateUserDto } from '@modules/user/dto/create-user.dto';
+import { Gender } from '@modules/user/dto/user.dto';
 
 describe('Authentication Service', () => {
   let authenticationService: AuthenticationService;
   let userAccountModel: UserAccountModel;
-  const mockReturnedUser = {
+  let passwordServiceHelper :PasswordServiceHelper
+  const mockReturnedUser  = {
     personalInformation: {
       firstName: 'oussama',
       lastName: 'benkemchi',
-      gender: 'Male',
-      dateOfBirth: '22-44-1904',
+      gender: Gender.MALE,
+      dateOfBirth: '22-44-1995',
     },
     contactInformation: {
       address: 'Algeria',
@@ -20,9 +24,9 @@ describe('Authentication Service', () => {
       email: 'admin@dynsight.fr',
     },
     permissions: {
-      role: 'admin',
-      organization: 'string',
+      role: 'Admin'
     },
+    
   };
   let mockUserAccountModel = {
     findOne: jest.fn().mockReturnValue({
@@ -30,10 +34,12 @@ describe('Authentication Service', () => {
     }),
   };
 
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthenticationService,
+        PasswordServiceHelper,
         {
           provide: getModelToken(UserAccount.name),
           useValue: mockUserAccountModel,

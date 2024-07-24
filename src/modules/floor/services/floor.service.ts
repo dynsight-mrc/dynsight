@@ -5,12 +5,11 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Floor, FloorModel } from '../models/floor.model';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateFloorsDto } from '../dtos/create-floors.dto';
 import { FloorServiceHelper } from './floor-helper.service';
-import { Types } from 'mongoose';
-import { CreateFloorDto } from '../dtos/create-floor.dto';
+import mongoose, { Types } from 'mongoose';
+import { Floor, FloorModel } from '../models/floor.model';
 
 @Injectable()
 export class FloorService {
@@ -20,24 +19,23 @@ export class FloorService {
   ) {}
 
   async create() {}
+
+
   async createMany(
     createFloorsDto: CreateFloorsDto,
     session?: any,
-  ): Promise<Floor[]> {
+  ):Promise<Floor[]> {
     let floorsFormatedData =
       this.floorServiceHelper.formatFloorsRawData(createFloorsDto);
-    
+
     try {
       let floorsDocs = await this.floorModel.insertMany(floorsFormatedData, {
         session,
       });
 
-      return floorsDocs;
+      return floorsDocs.map(ele=>ele.toJSON());
     } catch (error) {
-      
-      
       if (error.code === 11000) {
-        
         throw new HttpException(
           'Un ou plusieurs étages existent déja avec ces paramètres',
           HttpStatus.CONFLICT,
@@ -60,6 +58,23 @@ export class FloorService {
       throw new Error(error);
     }
   }
+  findByBuildingId = async (
+    buildingId: Types.ObjectId,
+  ): Promise<Partial<Floor>[]> => {
+    try {
+      let floorsDocs = await this.floorModel
+        .find({ buildingId: new mongoose.Types.ObjectId(buildingId) })
+        .select({ name: 1, id: 1, buildingId: 1, number: 1 });
+      if(floorsDocs.length===0){
+        return []
+      }
+      return floorsDocs.map((floor) => floor.toJSON());
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur s'est produite lors de la récupértion des données des étages",
+      );
+    }
+  };
   async update() {}
   async delete() {}
 }

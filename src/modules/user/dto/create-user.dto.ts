@@ -18,15 +18,19 @@ class PersonalInformationDto {
   firstName: string;
   @IsString()
   lastName: string;
+  @IsOptional()
   @IsEnum(UserDtos.Gender)
   gender?: UserDtos.Gender;
+  @IsOptional()
   @IsString()
   dateOfBirth?: string;
 }
 class ContactInformationDto {
   @IsString()
+  @IsOptional()
   address?: string;
   @IsString()
+  @IsOptional()
   phone?: string;
   @IsString()
   email: string;
@@ -40,10 +44,13 @@ class AuthenticationDto {
 class PermissionsDto {
   @IsString()
   role: UserDtos.UserRole;
+  @IsOptional()
   @IsMongoId()
-  organizationId:Types.ObjectId
+  organizationId?:Types.ObjectId
+  @IsOptional()
   @IsMongoId()
   floorId?:Types.ObjectId
+  @IsOptional()
   @IsMongoId()
   buildingId?:Types.ObjectId
 }

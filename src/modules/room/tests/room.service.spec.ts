@@ -3,13 +3,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoomServiceHelper } from '../services/room-helper.service';
 import { Room, RoomModel } from '../models/room.model';
 import { RoomService } from '../services/room.service';
-import mongoose from 'mongoose';
+import mongoose, { Query } from 'mongoose';
 import { Floor } from 'src/modules/floor/models/floor.model';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('Blocs Service Helper', () => {
   let mockRoomModel = {
     insertMany: jest.fn(),
+    find: jest.fn(),
+    select: jest.fn(),
+    exec: jest.fn(),
   };
   let roomServiceHelper: RoomServiceHelper;
   let roomService: RoomService;
@@ -18,7 +25,6 @@ describe('Blocs Service Helper', () => {
     '668e8c274bf69a2e53bf59f1',
   );
   let mockBuildingId = new mongoose.Types.ObjectId('668e8c274bf69a2e53bf59f2');
-
 
   let mockFloorsDocs = [
     {
@@ -92,19 +98,24 @@ describe('Blocs Service Helper', () => {
         ),
       ).rejects.toThrow('Inadéquation des valeurs');
     });
-    it('throw error if room already exists in the same organization\'s building', async () => {
+    it("throw error if room already exists in the same organization's building", async () => {
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 2'],
         type: ['office', 'office 2'],
-        surface: [12,12],
+        surface: [12, 12],
         floors: ['etage 1s', 'etage 3s'],
       };
       let session = {};
 
       jest.spyOn(roomModel, 'insertMany').mockRejectedValue({ code: 11000 });
-      let formatedRoomsData = roomServiceHelper.formatRoomsRawData(createRoomsDto,mockFloorsDocs,mockBuildingId,mockOrganizationId)
+      let formatedRoomsData = roomServiceHelper.formatRoomsRawData(
+        createRoomsDto,
+        mockFloorsDocs,
+        mockBuildingId,
+        mockOrganizationId,
+      );
       try {
-       await roomService.createMany(
+        await roomService.createMany(
           createRoomsDto,
           mockFloorsDocs,
           mockBuildingId,
@@ -114,21 +125,30 @@ describe('Blocs Service Helper', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-        expect(error.message).toEqual("Un ou plusieurs blocs existent déja avec ces paramètres");
+        expect(error.message).toEqual(
+          'Un ou plusieurs blocs existent déja avec ces paramètres',
+        );
       }
-      expect(mockRoomModel.insertMany).toHaveBeenCalledWith(formatedRoomsData,{session})
+      expect(mockRoomModel.insertMany).toHaveBeenCalledWith(formatedRoomsData, {
+        session,
+      });
     });
-    it('should throw error if if users couldn\'t be inserted for any reason', async () => {
+    it("should throw error if if users couldn't be inserted for any reason", async () => {
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 2'],
         type: ['office', 'office 2'],
-        surface: [12,12],
+        surface: [12, 12],
         floors: ['etage 1s', 'etage 3s'],
       };
       let session = {};
 
       jest.spyOn(roomModel, 'insertMany').mockRejectedValue({ code: 500 });
-      let formatedRoomsData = roomServiceHelper.formatRoomsRawData(createRoomsDto,mockFloorsDocs,mockBuildingId,mockOrganizationId)
+      let formatedRoomsData = roomServiceHelper.formatRoomsRawData(
+        createRoomsDto,
+        mockFloorsDocs,
+        mockBuildingId,
+        mockOrganizationId,
+      );
       try {
         await roomService.createMany(
           createRoomsDto,
@@ -140,9 +160,11 @@ describe('Blocs Service Helper', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
-        expect(error.message).toEqual("Erreur lors de la création des blocs");
+        expect(error.message).toEqual('Erreur lors de la création des blocs');
       }
-      expect(mockRoomModel.insertMany).toHaveBeenCalledWith(formatedRoomsData,{session})
+      expect(mockRoomModel.insertMany).toHaveBeenCalledWith(formatedRoomsData, {
+        session,
+      });
     });
     it('should return a list of created blocs', async () => {
       let createRoomsDto = {
@@ -205,7 +227,54 @@ describe('Blocs Service Helper', () => {
         mockBuildingId,
         mockOrganizationId,
       );
-      expect(createdRooms).toEqual(mockReturnedRooms );
+      expect(createdRooms).toEqual(mockReturnedRooms);
+    });
+  });
+  describe('Find By floor Id ', () => {
+    it('should throw an error if could not return the rooms for any reasosn', async () => {
+      let mockfloorId = new mongoose.Types.ObjectId();
+
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockRejectedValueOnce(new Error(''));
+
+      try {
+        await roomService.findByFloorId(mockfloorId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.status).toEqual(500);
+        expect(error.message).toEqual(
+          'Erreur sest produite lors de la récupérations des données des blocs',
+        );
+      }
+    });
+    it('should return empty array if no room was found', async () => {
+      let mockfloorId = new mongoose.Types.ObjectId();
+      let mockReturneValue = [];
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue);
+
+      let rooms = await roomService.findByFloorId(mockfloorId);
+
+      expect(mockRoomModel.find).toHaveBeenCalledWith({ floorId: mockfloorId });
+      expect(mockRoomModel.select).toHaveBeenCalledWith({
+        organizationId: 0,
+        buildingId: 0,
+      });
+      expect(rooms.length).toEqual(0);
+    });
+    it('shoold return a list of rooms', async () => {
+      let mockfloorId = new mongoose.Types.ObjectId();
+      let mockReturneValue = [
+        { toJSON: () => ({ name: 'bloc 1' }) },
+        { toJSON: () => ({ name: 'bloc 2' }) },
+      ];
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue);
+
+      let rooms = await roomService.findByFloorId(mockfloorId);
+      expect(mockRoomModel.find).toHaveBeenCalledWith({floorId:mockfloorId})
+      expect(mockRoomModel.select).toHaveBeenCalledWith({organizationId:0,buildingId:0})
+      expect(rooms).toEqual([{name:"bloc 1"},{name:'bloc 2'}])
     });
   });
 });

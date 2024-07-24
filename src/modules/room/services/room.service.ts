@@ -13,7 +13,7 @@ import { ReadRoomDto } from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
 import { CreateRoomsDto } from '../dtos/create-rooms.dto';
 import { RoomServiceHelper } from './room-helper.service';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { ObjectId, Types } from 'mongoose';
 import { Floor } from 'src/modules/floor/models/floor.model';
 
 /* import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
@@ -30,16 +30,15 @@ import { DeviceService } from 'src/modules/wattsense/services/devices/device.ser
 export class RoomService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: RoomModel,
-    private readonly roomServiceHelper: RoomServiceHelper,
-    /* private readonly deviceService: DeviceService,
+    private readonly roomServiceHelper: RoomServiceHelper /* private readonly deviceService: DeviceService,
     private readonly equipmentService: EquipmentService,
     private readonly coilsRepositoryService: CoilsRepositoryService,
     private readonly discreteInputRepositoryService: DiscreteInputsRepositoryService,
     private readonly holdingRegisterRepositoryServcie: HoldingRegistersRepositoryService,
-    private readonly inputRegisterRepositoryService: InputRegistersRepositoryService, */
+    private readonly inputRegisterRepositoryService: InputRegistersRepositoryService, */,
   ) {}
 
- /*  async findAll(): Promise<ReadRoomDto[]> {
+  /*  async findAll(): Promise<ReadRoomDto[]> {
     try {
       return await this.roomModel
         .find()
@@ -96,27 +95,38 @@ export class RoomService {
       throw new Error(error.message);
     }
   }
-
+  findByFloorId = async (floorId: Types.ObjectId) :Promise<Room[]> =>  {
+    try {
+      let rooms = await this.roomModel.find({ floorId: floorId }).select({
+        buildingId: 0,
+        organizationId: 0,
+      });
+      if (rooms.length == 0) return [];
+      return rooms.map((room) => room.toJSON());
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Erreur sest produite lors de la récupérations des données des blocs',
+      );
+    }
+  };
   async createMany(
     createRoomsDto: CreateRoomsDto,
     floors: Floor[],
-    buildingId:Types.ObjectId,
-    organizationId:Types.ObjectId,
+    buildingId: Types.ObjectId,
+    organizationId: Types.ObjectId,
     session?: any,
-  ) :Promise<Room[]>{
-    
-     let roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
+  ): Promise<Room[]> {
+    let roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
       createRoomsDto,
       floors,
       buildingId,
-      organizationId
+      organizationId,
     );
 
     try {
       let blocsDocs = await this.roomModel.insertMany(roomsFormatedData, {
         session,
       });
-    
 
       return blocsDocs as undefined as Room[];
     } catch (error) {
@@ -142,9 +152,9 @@ export class RoomService {
     }
     const room = this.roomModel.build({
       name: createRoomDto.name,
-      floorId:new  mongoose.Types.ObjectId(createRoomDto.floor),
-      buildingId: new  mongoose.Types.ObjectId(createRoomDto.building),
-      organizationId: new  mongoose.Types.ObjectId(createRoomDto.organization),
+      floorId: new mongoose.Types.ObjectId(createRoomDto.floor),
+      buildingId: new mongoose.Types.ObjectId(createRoomDto.building),
+      organizationId: new mongoose.Types.ObjectId(createRoomDto.organization),
       zone: createRoomDto.organization,
     });
     await room.save({ session });
@@ -155,7 +165,7 @@ export class RoomService {
     return await this.roomModel.deleteOne({ _id: id });
   }
 
- /*  async findOrCreatePropertiesFromDevice(
+  /*  async findOrCreatePropertiesFromDevice(
     roomId: string,
     updateRoomPropertiesDto: UpdateRoomPropertiesDto,
   ): Promise<string[]> {

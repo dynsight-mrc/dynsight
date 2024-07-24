@@ -1,8 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Document, Model, ObjectId, SchemaType, SchemaTypes } from 'mongoose';
+import mongoose, { Document, Model, ObjectId, SchemaType, SchemaTypes, Types } from 'mongoose';
 import { Organization } from '../../organization/models/organization.model';
+import { AddressDto } from '../dtos/create-building.dto';
 
-interface BuildingAttrs {}
+interface BuildingAttrs {
+  reference: string;
+  organizationId:Types.ObjectId
+  name: string;
+  constructionYear: number;
+  surface: number;
+  address: AddressDto;
+  type: string;
+}
 export interface BuildingModel extends Model<Building> {
   build(buildingAttrs: BuildingAttrs): Building;
 }
