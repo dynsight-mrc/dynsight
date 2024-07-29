@@ -1,27 +1,12 @@
 import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsNumber,
-  IsArray,
-  IsObject,
-  ValidateNested,
-  IsEmail,
-  IsOptional,
-  IsIn,
-  IsInt,
-} from 'class-validator';
-
-class CoordinatesDto {
-  @IsString()
-  lat: string;
-
-  @IsString()
-  long: string;
-}
+import { IsString, ValidateNested, IsInt, IsMongoId, IsNumber } from 'class-validator';
+import { Types } from 'mongoose';
+import { AddressDto } from './building-address.dto';
+import { ReadFloorWithDetailedRoomsList } from '@modules/floor/dtos/read-floor.dto';
 
 export class ReadBuildingDto {
   @IsString()
-  id: string;
+  id: Types.ObjectId;
 
   @IsString()
   reference: string;
@@ -29,16 +14,33 @@ export class ReadBuildingDto {
   @IsString()
   name: string;
 
-  @IsString()
-  constructionYear: string;
+  @IsNumber()
+  constructionYear: number;
 
   @IsInt()
   surface: number;
 
-  @ValidateNested()
-  @Type(() => CoordinatesDto)
-  coordinates: CoordinatesDto;
-
   @IsString()
   type: string;
+
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address: AddressDto;
+
+  @IsMongoId()
+  organizationId:Types.ObjectId
+
 }
+
+
+
+export type ReadBuildingWithDetailedFloorsList = {
+  reference: string;
+  name: string;
+  constructionYear: number;
+  surface: number;
+  address: AddressDto;
+  type: string;
+  id: Types.ObjectId;
+  floors: ReadFloorWithDetailedRoomsList[];
+};

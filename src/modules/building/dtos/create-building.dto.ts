@@ -1,51 +1,14 @@
 import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsNumber,
-  IsArray,
-  IsObject,
-  ValidateNested,
-  IsEmail,
-  IsOptional,
-  IsMongoId,
-  IsInt,
-} from 'class-validator';
-import {  Types } from 'mongoose';
+import { IsString, IsNumber, ValidateNested, IsMongoId } from 'class-validator';
+import { Types } from 'mongoose';
+import { AddressDto } from './building-address.dto';
 
-class CoordinatesDto {
-  @IsNumber()
-  lat: number;
-
-  @IsNumber()
-  long: number;
-}
-
-export class AddressDto{
-  @IsString()
-  streetAddress: string;
-  @IsString()
-  streetNumber: string;
-  @IsString()
-  streetName: string;
-  @IsString()
-  city: string;
-  @IsString()
-  state: string;
-  @IsString()
-  postalCode: number;
-  @IsString()
-  country: string;
-  @ValidateNested()
-  @Type(()=>CoordinatesDto)
-  coordinates?: CoordinatesDto;
-}
-
-export class  CreateBuildingDto {
+export class CreateBuildingDto {
   @IsString()
   reference: string;
 
   @IsMongoId()
-  organizationId:Types.ObjectId
+  organizationId: Types.ObjectId;
 
   @IsString()
   name: string;
@@ -56,13 +19,11 @@ export class  CreateBuildingDto {
   @IsNumber()
   surface: number;
 
-
   @IsString()
   type: string;
   @ValidateNested()
-  
 
   @ValidateNested()
-  @Type(()=>AddressDto)
-  address:AddressDto
+  @Type(() => AddressDto)
+  address: AddressDto;
 }

@@ -9,12 +9,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Room, RoomModel } from '../models/room.model';
 import { CreateRoomDto } from '../dtos/create-room.dto';
 
-import { ReadRoomDto } from '../dtos/read-room-dto';
+import { ReadRoomDto, ReadRoomWithFloorId } from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
 import { CreateRoomsDto } from '../dtos/create-rooms.dto';
 import { RoomServiceHelper } from './room-helper.service';
 import mongoose, { ObjectId, Types } from 'mongoose';
 import { Floor } from 'src/modules/floor/models/floor.model';
+import {
+  CreateFloorDto,
+  CreateFloorsDto,
+} from '@modules/floor/dtos/create-floors.dto';
 
 /* import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
 import { EquipmentService } from '../../wattsense/services/equipments/equipment.service';
@@ -95,12 +99,15 @@ export class RoomService {
       throw new Error(error.message);
     }
   }
-  findByFloorId = async (floorId: Types.ObjectId) :Promise<Room[]> =>  {
+  findByFloorId = async (
+    floorId: Types.ObjectId,
+  ): Promise<ReadRoomWithFloorId[]> => {
     try {
       let rooms = await this.roomModel.find({ floorId: floorId }).select({
         buildingId: 0,
         organizationId: 0,
       });
+
       if (rooms.length == 0) return [];
       return rooms.map((room) => room.toJSON());
     } catch (error) {
@@ -109,13 +116,14 @@ export class RoomService {
       );
     }
   };
+
   async createMany(
     createRoomsDto: CreateRoomsDto,
-    floors: Floor[],
+    floors: CreateFloorDto[],
     buildingId: Types.ObjectId,
     organizationId: Types.ObjectId,
     session?: any,
-  ): Promise<Room[]> {
+  ): Promise<ReadRoomDto[]> {
     let roomsFormatedData = this.roomServiceHelper.formatRoomsRawData(
       createRoomsDto,
       floors,
@@ -128,7 +136,7 @@ export class RoomService {
         session,
       });
 
-      return blocsDocs as undefined as Room[];
+      return blocsDocs as undefined as ReadRoomDto[];
     } catch (error) {
       if (error.code === 11000) {
         throw new HttpException(

@@ -8,7 +8,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { BuildingService } from '@modules/building/services/building.service';
 import { FloorService } from '@modules/floor/services/floor.service';
 import { UserService } from '@modules/user/services/user.service';
-import { CreatedAccountDto } from '../dto/created-account.dto';
+import { ReadAccountDto } from '../dto/read-account.dto';
 
 @Injectable()
 export class AccountService {
@@ -20,7 +20,7 @@ export class AccountService {
     private readonly userService: UserService,
     @InjectConnection() private connection: Connection,
   ) {}
-  async create(createAccountDto: CreateAccountDto): Promise<CreatedAccountDto> {
+  async create(createAccountDto: CreateAccountDto): Promise<ReadAccountDto> {
     let { organization, building, location, floors, blocs, users } =
       createAccountDto;
 
@@ -47,10 +47,8 @@ export class AccountService {
       //create floors
       const floorsDocs = await this.floorService.createMany(
         {
-          organizationId: organizationDoc.id,
-          //organizationId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083ce"),
-          //buildingId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083d0"),
-          buildingId: buildingDoc.id,
+          organizationId: new mongoose.Types.ObjectId(organizationDoc.id),
+          buildingId: new mongoose.Types.ObjectId(buildingDoc.id),
           ...floors,
         },
         session,

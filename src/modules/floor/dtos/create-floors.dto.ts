@@ -30,3 +30,21 @@ export class CreateFloorsDto {
   @IsMongoId()
   buildingId:Types.ObjectId 
 }
+
+
+export class CreateFloorDto {
+  @IsMongoId()
+  id:Types.ObjectId
+
+  @IsString()
+  name: string;
+
+  @IsString()
+  number: number;
+
+  @IsMongoId()
+  organizationId:Types.ObjectId 
+
+  @IsMongoId()
+  buildingId:Types.ObjectId 
+}

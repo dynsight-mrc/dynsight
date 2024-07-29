@@ -1,47 +1,53 @@
 import {
-    Controller,
-    Get,
-    Query,
-    Post,
-    Body,
-    Put,
-    Param,
-    Delete,
-    Patch,
-    UseFilters,
-    HttpException,
-    HttpStatus,
-  } from '@nestjs/common';import { BuildingService } from '../services/building.service';
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Patch,
+  HttpException,
+  HttpStatus,
+  Query,
+} from '@nestjs/common';
+import { BuildingService } from '../services/building.service';
 import { CreateBuildingDto } from '../dtos/create-building.dto';
-import { ReadBuildingDto } from '../dtos/read-building.dto';
+import { ReadBuildingDto, ReadBuildingWithDetailedFloorsList } from '../dtos/read-building.dto';
 import { Building } from '../models/building.model';
 
 @Controller('buildings')
 export class BuildingController {
-    constructor(private readonly buildingService:BuildingService){
+  constructor(private readonly buildingService: BuildingService) {}
 
-    }
 
-    @Post()
-  create(@Body() createBuildingDto:CreateBuildingDto) :Promise<Building>{
+  @Post()
+  create(@Body() createBuildingDto: CreateBuildingDto): Promise<ReadBuildingDto> {
     return this.buildingService.create(createBuildingDto);
   }
 
-  @Get()
+  //GET 
+  @Get("/all")
   findAll() {
-    throw new HttpException("ok",HttpStatus.INTERNAL_SERVER_ERROR)
     return this.buildingService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.buildingService.findOne();
+  async findOne(@Param('id') id: string) :Promise<ReadBuildingWithDetailedFloorsList|null> {
+    
+    
+    let building =  await this.buildingService.findOne(id);
+    
+    return building
   }
 
-  @Patch(':id')
-  update() {
-    
+
+  //GET BUILDINGS WITH ORGANIZATIONID (WITH ALL ENTITES: FLOORS=>ROOMS)
+  @Get("")
+  findByOrganizationId(@Query("organization") organization:string){    
+    return this.buildingService.findByOrganizationId(organization)
   }
+  @Patch(':id')
+  update() {}
 
   @Delete(':id')
   remove(@Param('id') id: string) {

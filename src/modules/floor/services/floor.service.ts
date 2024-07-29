@@ -10,6 +10,10 @@ import { CreateFloorsDto } from '../dtos/create-floors.dto';
 import { FloorServiceHelper } from './floor-helper.service';
 import mongoose, { Types } from 'mongoose';
 import { Floor, FloorModel } from '../models/floor.model';
+import {
+  ReadFloorDto,
+  ReadFloordWithBuildingId,
+} from '../dtos/read-floor.dto';
 
 @Injectable()
 export class FloorService {
@@ -20,11 +24,10 @@ export class FloorService {
 
   async create() {}
 
-
   async createMany(
     createFloorsDto: CreateFloorsDto,
     session?: any,
-  ):Promise<Floor[]> {
+  ): Promise<ReadFloorDto[]> {
     let floorsFormatedData =
       this.floorServiceHelper.formatFloorsRawData(createFloorsDto);
 
@@ -33,7 +36,7 @@ export class FloorService {
         session,
       });
 
-      return floorsDocs.map(ele=>ele.toJSON());
+      return floorsDocs as undefined as ReadFloorDto[] ;
     } catch (error) {
       if (error.code === 11000) {
         throw new HttpException(
@@ -59,17 +62,19 @@ export class FloorService {
     }
   }
   findByBuildingId = async (
-    buildingId: Types.ObjectId,
-  ): Promise<Partial<Floor>[]> => {
+    buildingId: string,
+  ): Promise<ReadFloordWithBuildingId[]> => {
     try {
       let floorsDocs = await this.floorModel
         .find({ buildingId: new mongoose.Types.ObjectId(buildingId) })
-        .select({ name: 1, id: 1, buildingId: 1, number: 1 });
-      if(floorsDocs.length===0){
-        return []
+        .select({ name: 1, id: 1, buildingId: 1, number: 1 })
+        
+      if (floorsDocs.length === 0) {
+        return [];
       }
-      return floorsDocs.map((floor) => floor.toJSON());
+      return floorsDocs.map(floor=>floor.toJSON()) 
     } catch (error) {
+      
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récupértion des données des étages",
       );

@@ -51,10 +51,10 @@ export interface FloorModel extends Model<Floor> {
 
 @Schema()
 export class Floor extends Document {
-  @Prop({ type: Number, required: true})
+  @Prop({ type: Number, required: true })
   number: number;
 
-  @Prop({ type: String, required: true})
+  @Prop({ type: String, required: true })
   name: string;
 
   @Prop({ type: Number })
@@ -97,7 +97,7 @@ export class Floor extends Document {
 
   @Prop({
     type: [{ type: Types.ObjectId, ref: 'Occupant' }],
-    
+
     default: undefined,
   })
   occupants?: Types.ObjectId[];
@@ -123,15 +123,19 @@ export class Floor extends Document {
 
 export const FloorSchema = SchemaFactory.createForClass(Floor);
 FloorSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
   transform: (doc, ret) => {
     ret.id = doc._id;
     delete ret._id;
+    delete ret.__v
   },
 });
-FloorSchema.index({organizationId: 1,buildingId: 1, name:1,number:1},{unique:true});
+FloorSchema.index(
+  { organizationId: 1, buildingId: 1, name: 1, number: 1 },
+  { unique: true },
+);
 
 FloorSchema.statics.build = function (attrs: FloorAttrs) {
-
   return new this(attrs);
-
 };

@@ -174,7 +174,7 @@ describe('OrganizationService', () => {
   describe('findById', () => {
     it('should throw error if could not fetch organization for any reasons', async () => {
       let mockOrganizationId = new mongoose.Types.ObjectId();
-      mockOrganizationModel.findOne.mockRejectedValueOnce(new Error(''));
+      mockOrganizationModel.findOne.mockRejectedValueOnce("new Error('')");
 
       try {
         await organizationService.findById(mockOrganizationId.toString());

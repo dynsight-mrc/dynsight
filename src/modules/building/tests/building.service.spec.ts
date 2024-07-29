@@ -6,14 +6,24 @@ import { getModelToken } from '@nestjs/mongoose';
 import { HttpException, InternalServerErrorException } from '@nestjs/common';
 import { CreateBuildingDto } from '../dtos/create-building.dto';
 import mongoose, { mongo } from 'mongoose';
+import { RoomService } from '@modules/room/services/room.service';
+import { FloorService } from '@modules/floor/services/floor.service';
 
 describe('BuildingService', () => {
   let buildingService: BuildingService;
   let buildngServiceHelper: BuildingServiceHelper;
   let buildingModel: BuildingModel;
+  let mockFloorService = {
+    findByBuildingId: jest.fn(),
+  };
+  let mockRoomService = {
+    findByFloorId:jest.fn()
+  };
+  let mockBuildingId = new mongoose.Types.ObjectId();
+
   let mockBuilding = {
-    id: new mongoose.Types.ObjectId('620b48f4a4e10b001e6d2b3d'),
-    organizationId:new mongoose.Types.ObjectId('668e6e2ddb4c17164be2d6a1'),
+    id: mockBuildingId,
+    organizationId: new mongoose.Types.ObjectId('668e6e2ddb4c17164be2d6a1'),
     reference: 'string',
     name: 'string',
     constructionYear: 2012,
@@ -34,14 +44,26 @@ describe('BuildingService', () => {
     type: 'industry',
     save: jest.fn().mockResolvedValue(true),
   };
+  const mockFloorsDocs = [
+    {
+      name: 'etage 1',
+      id: new mongoose.Types.ObjectId(),
+      number: 1,
+      buildingId: mockBuildingId,
+    },
+  ];
 
+  let mockRoomsDocs = [
+    { name: 'bloc 1', floorId: mockFloorsDocs[0].id },
+    { name: 'bloc 2', floorId: mockFloorsDocs[0].id },
+  ];
   let mockBuildingModel = {
     findOne: jest.fn(),
     build: jest.fn().mockReturnValue(mockBuilding),
-    find:jest.fn(),
-    select:jest.fn()
+    find: jest.fn(),
+    select: jest.fn(),
+    lean: jest.fn(),
   };
-
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,7 +73,8 @@ describe('BuildingService', () => {
           provide: getModelToken(Building.name),
           useValue: mockBuildingModel,
         },
-
+        { provide: RoomService, useValue: mockRoomService },
+        { provide: FloorService, useValue: mockFloorService },
       ],
     }).compile();
 
@@ -67,7 +90,7 @@ describe('BuildingService', () => {
     expect(buildngServiceHelper).toBeDefined();
   });
 
-  describe('Create a Building', () => {
+  describe('Create', () => {
     it('should throw an error if a building with the same name exists', async () => {
       jest
         .spyOn(buildngServiceHelper, 'checkIfBuildingExists')
@@ -143,20 +166,24 @@ describe('BuildingService', () => {
     });
   });
 
-  describe('Get buildings by Organization Id', () => { 
-    it('should throw an error if could not return the buildings for any reasosn', async () => {
+  describe('findByOrganizationId', () => {
+    it('should throw an error if could not return the buildings for any reason', async () => {
       let mockOrganizationId = new mongoose.Types.ObjectId();
 
       mockBuildingModel.find.mockReturnThis();
-      mockBuildingModel.select.mockRejectedValueOnce(new Error(''));
+      mockBuildingModel.select.mockReturnThis();
+
+      mockBuildingModel.lean.mockRejectedValueOnce(new Error(''));
 
       try {
-        await buildingService.findByOrganizationId(mockOrganizationId);
+        await buildingService.findByOrganizationId(
+          mockOrganizationId.toString(),
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toEqual(500);
         expect(error.message).toEqual(
-          "Erreur s'est produite lors de la récupération  des données de l'immeuble",
+          "Erreur s'est produite lors de la récupération  des données des immeubles",
         );
       }
     });
@@ -167,19 +194,19 @@ describe('BuildingService', () => {
       mockBuildingModel.find.mockReturnThis();
       mockBuildingModel.select.mockResolvedValue(mockReturneValue);
 
-      let buildings = await buildingService.findByOrganizationId(mockOrganizationId);
+      let buildings = await buildingService.findByOrganizationId(
+        mockOrganizationId.toString(),
+      );
 
       expect(mockBuildingModel.find).toHaveBeenCalledWith({
         organizationId: mockOrganizationId,
       });
-      expect(mockBuildingModel.select).toHaveBeenCalledWith(
-        { organizationId: 0 }
-      );
+      expect(mockBuildingModel.select).toHaveBeenCalledWith({
+        organizationId: 0,
+      });
       expect(buildings.length).toEqual(0);
     });
     it('should return a list of buildings', async () => {
-     
-     
       let mockOrganizationId = new mongoose.Types.ObjectId();
       let buildingsData = [
         {
@@ -190,24 +217,94 @@ describe('BuildingService', () => {
           address: {},
           type: 'commercial',
           id: new mongoose.Types.ObjectId(),
-          
         },
-        
-      ]
-      let mockReturneValue = buildingsData.map(ele=>({toJSON:()=>ele}))
-      
+      ];
+      let mockReturneValue = buildingsData.map((ele) => ({
+        toJSON: () => ele,
+      }));
+
       mockBuildingModel.find.mockReturnThis();
       mockBuildingModel.select.mockResolvedValueOnce(mockReturneValue);
 
-      let buildings = await buildingService.findByOrganizationId(mockOrganizationId);
+      let buildings = await buildingService.findByOrganizationId(
+        mockOrganizationId.toString(),
+      );
       expect(mockBuildingModel.find).toHaveBeenCalledWith({
         organizationId: mockOrganizationId,
       });
       expect(mockBuildingModel.select).toHaveBeenCalledWith({
-        organizationId:0
+        organizationId: 0,
       });
-      expect(buildings.length).toEqual(1)
+      expect(buildings.length).toEqual(1);
       expect(buildings).toEqual(buildingsData);
     });
-   })
+  });
+
+  describe('findOne', () => {
+    it('should throw an error if could not retrive the building for any reasons', async () => {
+      mockBuildingModel.findOne.mockRejectedValueOnce(new Error(''));
+      //await expect(()=>buildingService.findOne(mockBuildingId.toString())).toThrow(InternalServerErrorException)
+
+      try {
+        await buildingService.findOne(mockBuildingId.toString());
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.status).toEqual(500);
+        expect(error.message).toEqual(
+          "Erreur s'est produite lors de la récuperation de l'immeuble",
+        );
+      }
+    });
+    it('should return null if no building is found', async () => {
+      mockBuildingModel.findOne.mockResolvedValueOnce(null);
+      //await expect(()=>buildingService.findOne(mockBuildingId.toString())).toThrow(InternalServerErrorException)
+
+      let building = await buildingService.findOne(mockBuildingId.toString());
+      expect(building).toBe(null);
+    });
+    it('should throw error if could not fetch the related floors for any reasons', async () => {
+      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+      mockFloorService.findByBuildingId.mockRejectedValueOnce(new Error(''));
+      try {
+        await buildingService.findOne(mockBuildingId.toString());
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.status).toEqual(500);
+        expect(error.message).toEqual(
+          "Erreur s'est produite lors de la récupértion des données des étages",
+        );
+      }
+    });
+    it('should throw error if could not fetch related rooms for ant reason', async () => {
+      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+
+      mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.findByFloorId.mockRejectedValueOnce(
+        new Error(""),
+      );
+      try {
+        await buildingService.findOne(mockBuildingId.toString());
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.status).toEqual(500);
+        expect(error.message).toEqual(
+          'Erreur sest produite lors de la récupérations des données des blocs',
+        );
+      }
+    });
+    it('should return the requested building with the related entites',async()=>{
+      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+      mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs)
+      let buildingDoc = await buildingService.findOne(mockBuildingId.toString());
+
+
+      expect(buildingDoc).toBeDefined()
+      expect(buildingDoc.floors.length).toEqual(1)
+      expect(buildingDoc.floors[0].rooms.length).toEqual(2)
+    });
+  });
+  afterEach(() => {
+    mockFloorService.findByBuildingId.mockReset();
+  });
 });

@@ -15,7 +15,7 @@ import { AccountService } from '../services/account.service';
 import { CreateAccountDto } from '../dto/create-account.dto';
 import { UpdateAccountDto } from '../dto/update-account.dto';
 import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
-import { CreatedAccountDto } from '../dto/created-account.dto';
+import { ReadAccountDto } from '../dto/read-account.dto';
 
 @Controller('accounts')
 @UseGuards(AuthorizationGuard)
@@ -26,7 +26,7 @@ export class AccountController {
   @HttpCode(201)
   create(
     @Body() createAccountDto: CreateAccountDto,
-  ): Promise<CreatedAccountDto> {
+  ): Promise<ReadAccountDto> {
     return this.accountService.create(createAccountDto);
   }
 

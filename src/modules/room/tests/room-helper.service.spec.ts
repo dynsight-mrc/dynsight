@@ -3,13 +3,33 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoomServiceHelper } from '../services/room-helper.service';
 import { Room, RoomModel } from '../models/room.model';
 import mongoose from 'mongoose';
-import mockingoose from 'mockingoose';
+
 import { Floor } from 'src/modules/floor/models/floor.model';
+import { CreateFloorDto } from '@modules/floor/dtos/create-floors.dto';
 
 describe('Blocs Service Helper', () => {
   let mockRoomModel = {};
   let roomServiceHelper: RoomServiceHelper;
   let roomModel: RoomModel;
+  let mockOrganizationId = new mongoose.Types.ObjectId();
+  let mockBuildingId = new mongoose.Types.ObjectId();
+
+  let mockFloorsDocs : CreateFloorDto[] = [
+    {
+      id:new mongoose.Types.ObjectId(),
+      name: 'etage 1s',
+      number: 1,
+      buildingId: mockBuildingId,
+      organizationId: mockOrganizationId,
+    },
+    {
+      id:new mongoose.Types.ObjectId(),
+      name: 'etage 3s',
+      number: 2,
+      buildingId: mockBuildingId,
+      organizationId: mockOrganizationId,
+    },
+  ];
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,8 +47,7 @@ describe('Blocs Service Helper', () => {
   });
   describe('formatRoomsRawData', () => {
     it('should throw error if raw data legnth is not identical', async () => {
-      let mockOrganizationId = new mongoose.Types.ObjectId();
-      let mockBuildingId = new mongoose.Types.ObjectId();
+
 
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 1'],
@@ -36,20 +55,7 @@ describe('Blocs Service Helper', () => {
         surface: [12, 43],
         floors: ['etage 1s', 'etage 3s'],
       };
-      let mockFloorsDocs = [
-        {
-          name: 'bloc 1',
-          number: 1,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-        {
-          name: 'bloc 2',
-          number: 2,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-      ] as unknown as Floor[];
+    
 
       expect(() =>
         roomServiceHelper.formatRoomsRawData(
@@ -61,8 +67,7 @@ describe('Blocs Service Helper', () => {
       ).toThrow('Inadéquation des valeurs');
     });
     it('should throw error if blocs names have double values', async () => {
-      let mockOrganizationId = new mongoose.Types.ObjectId();
-      let mockBuildingId = new mongoose.Types.ObjectId();
+    
 
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 1'],
@@ -70,21 +75,7 @@ describe('Blocs Service Helper', () => {
         surface: [12, 43],
         floors: ['etage 1s', 'etage 3s'],
       };
-      let mockFloorsDocs = [
-        {
-          name: 'bloc 1',
-          number: 1,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-        {
-          name: 'bloc 2',
-          number: 2,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-      ] as unknown as Floor[];
-
+    
       expect(() =>
         roomServiceHelper.formatRoomsRawData(
           createRoomsDto,
@@ -93,31 +84,18 @@ describe('Blocs Service Helper', () => {
           mockOrganizationId,
         ),
       ).toThrow('Noms des blocs doivent etre uniques');
+     
     });
-    it('should throw error if blocs names have double values', async () => {
-      let mockOrganizationId = new mongoose.Types.ObjectId();
-      let mockBuildingId = new mongoose.Types.ObjectId();
+    it('should throw error if the no floors found with same floors name in payload', async () => {
+   
 
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 2'],
         type: ['office', 'office 2'],
         surface: [12, 43],
-        floors: ['etage 1s', 'etage 3s'],
+        floors: ['etage 4s', 'etage 3s'],
       };
-      let mockFloorsDocs = [
-        {
-          name: 'bloc 11',
-          number: 1,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-        {
-          name: 'bloc 2',
-          number: 2,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-      ] as unknown as Floor[];
+     
 
       expect(() =>
         roomServiceHelper.formatRoomsRawData(
@@ -129,8 +107,7 @@ describe('Blocs Service Helper', () => {
       ).toThrow("erreur lors du mappage des identifiants d'étages");
     });
     it('should create list of blocs object ready to save in db', async () => {
-      let mockOrganizationId = new mongoose.Types.ObjectId();
-      let mockBuildingId = new mongoose.Types.ObjectId();
+ 
 
       let createRoomsDto = {
         name: ['bloc 1', 'bloc 2'],
@@ -138,29 +115,14 @@ describe('Blocs Service Helper', () => {
         surface: [12, 43],
         floors: ['etage 1s', 'etage 3s'],
       };
-      let mockFloorsDocs = [
-        {
-          id: new mongoose.Types.ObjectId(),
-          name: 'etage 1s',
-          number: 1,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-        {
-          id: new mongoose.Types.ObjectId(),
-          name: 'etage 3s',
-          number: 2,
-          buildingId: mockBuildingId,
-          organizationId: mockOrganizationId,
-        },
-      ] as unknown as Floor[];
-
+     
       let mockedReturnedBlocs = roomServiceHelper.formatRoomsRawData(
         createRoomsDto,
         mockFloorsDocs,
         mockBuildingId,
         mockOrganizationId,
       );
+      
       expect(mockedReturnedBlocs).toBeDefined();
       expect(mockedReturnedBlocs[0]).toEqual({
         name: createRoomsDto.name[0],

@@ -10,6 +10,7 @@ import { Types } from 'mongoose';
 import { UserServiceHelper } from './user-helper.service';
 import { UserAccount, UserAccountModel } from '../models/user.model';
 import { InjectModel } from '@nestjs/mongoose';
+import { ReadUserDto } from '../dto/read-user.dto';
 
 
 @Injectable()
@@ -24,7 +25,7 @@ export class UserService {
     buildingId: Types.ObjectId,
     organizationId: Types.ObjectId,
     session?: any,
-  ): Promise<UserAccount[]> {
+  ): Promise<ReadUserDto[]> {
     let usersFormatedData = await this.userServiceHelper.formatUsersRawData(
       createUsersDto,
       buildingId,
@@ -34,7 +35,7 @@ export class UserService {
     try {
       let usersDocs = await this.userModel.insertMany(usersFormatedData,{session});
      
-      return usersDocs as undefined as UserAccount[];
+      return usersDocs as undefined as ReadUserDto[];
     } catch (error) {
 
       if (error.code === 11000) {

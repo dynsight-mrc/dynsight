@@ -10,13 +10,14 @@ import {
   HttpStatus,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { CreateFloorDto } from '@modules/floor/dtos/create-floors.dto';
 
 describe('Blocs Service Helper', () => {
   let mockRoomModel = {
     insertMany: jest.fn(),
     find: jest.fn(),
     select: jest.fn(),
-    exec: jest.fn(),
+    lean: jest.fn(),
   };
   let roomServiceHelper: RoomServiceHelper;
   let roomService: RoomService;
@@ -26,7 +27,7 @@ describe('Blocs Service Helper', () => {
   );
   let mockBuildingId = new mongoose.Types.ObjectId('668e8c274bf69a2e53bf59f2');
 
-  let mockFloorsDocs = [
+  let mockFloorsDocs: CreateFloorDto[] = [
     {
       id: new mongoose.Types.ObjectId(),
       name: 'etage 1s',
@@ -41,7 +42,7 @@ describe('Blocs Service Helper', () => {
       buildingId: mockBuildingId,
       organizationId: mockOrganizationId,
     },
-  ] as unknown as Floor[];
+  ];
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -71,7 +72,7 @@ describe('Blocs Service Helper', () => {
         surface: [12],
         floors: ['etage 1s', 'etage 3s'],
       };
-      let mockFloorsDocs = [
+      let mockFloorsDocs: CreateFloorDto[] = [
         {
           id: new mongoose.Types.ObjectId(),
           name: 'etage 1s',
@@ -86,7 +87,7 @@ describe('Blocs Service Helper', () => {
           buildingId: mockBuildingId,
           organizationId: mockOrganizationId,
         },
-      ] as unknown as Floor[];
+      ];
       let session = {};
       expect(() =>
         roomService.createMany(
@@ -176,7 +177,7 @@ describe('Blocs Service Helper', () => {
 
       let mockOrganizationId = new mongoose.Types.ObjectId();
       let mockBuildingId = new mongoose.Types.ObjectId();
-      let mockFloorsDocs = [
+      let mockFloorsDocs: CreateFloorDto[] = [
         {
           id: new mongoose.Types.ObjectId(),
           name: 'etage 1s',
@@ -191,7 +192,7 @@ describe('Blocs Service Helper', () => {
           buildingId: mockBuildingId,
           organizationId: mockOrganizationId,
         },
-      ] as unknown as Floor[];
+      ];
       let session = {};
       let mockFormatedRoomsData = roomServiceHelper.formatRoomsRawData(
         createRoomsDto,
@@ -230,12 +231,13 @@ describe('Blocs Service Helper', () => {
       expect(createdRooms).toEqual(mockReturnedRooms);
     });
   });
-  describe('Find By floor Id ', () => {
+  describe('findByFoorId', () => {
     it('should throw an error if could not return the rooms for any reasosn', async () => {
       let mockfloorId = new mongoose.Types.ObjectId();
 
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockRejectedValueOnce(new Error(''));
+      mockRoomModel.select.mockReturnThis();
+      mockRoomModel.lean.mockRejectedValueOnce(new Error(''));
 
       try {
         await roomService.findByFloorId(mockfloorId);
@@ -251,7 +253,7 @@ describe('Blocs Service Helper', () => {
       let mockfloorId = new mongoose.Types.ObjectId();
       let mockReturneValue = [];
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue);
+      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue.map(ele=>({toJSON:()=>ele})));
 
       let rooms = await roomService.findByFloorId(mockfloorId);
 
@@ -262,19 +264,19 @@ describe('Blocs Service Helper', () => {
       });
       expect(rooms.length).toEqual(0);
     });
-    it('shoold return a list of rooms', async () => {
+    it('should return a list of rooms', async () => {
       let mockfloorId = new mongoose.Types.ObjectId();
-      let mockReturneValue = [
-        { toJSON: () => ({ name: 'bloc 1' }) },
-        { toJSON: () => ({ name: 'bloc 2' }) },
-      ];
+      let mockReturneValue = [{ name: 'bloc 1' }, { name: 'bloc 2' }];
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue);
+      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue.map(ele=>({toJSON:()=>ele})));
 
       let rooms = await roomService.findByFloorId(mockfloorId);
-      expect(mockRoomModel.find).toHaveBeenCalledWith({floorId:mockfloorId})
-      expect(mockRoomModel.select).toHaveBeenCalledWith({organizationId:0,buildingId:0})
-      expect(rooms).toEqual([{name:"bloc 1"},{name:'bloc 2'}])
+      expect(mockRoomModel.find).toHaveBeenCalledWith({ floorId: mockfloorId });
+      expect(mockRoomModel.select).toHaveBeenCalledWith({
+        organizationId: 0,
+        buildingId: 0,
+      });
+      expect(rooms).toEqual([{ name: 'bloc 1' }, { name: 'bloc 2' }]);
     });
   });
 });

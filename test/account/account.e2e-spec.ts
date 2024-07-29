@@ -8,13 +8,14 @@ import { MockGuard } from '../__mock__/mockGuard';
 import { MockExtractToken } from '../__mock__/mockExtractTokenMiddleware';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppTestModule } from '../__mock__/app-test.module';
-import { CreatedAccountDto } from '@modules/account/dto/created-account.dto';
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
+import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
+import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
 
 
 describe('Account (e2e)', () => {
   let app: INestApplication;
-  let createAccountDto: CreateAccountDto = {
+  /* let createAccountDto: CreateAccountDto = {
     building: {
       reference: 'building mine pro',
       name: 'building mine pro max',
@@ -58,7 +59,7 @@ describe('Account (e2e)', () => {
         long: 3344,
       },
     },
-  };
+  }; */
   let connection: Connection;
   let replSet: MongoMemoryReplSet;
   beforeAll(async () => {
@@ -80,7 +81,7 @@ describe('Account (e2e)', () => {
     appModule.configure = (consumer) => {
       consumer
         .apply(MockExtractToken)
-        .forRoutes('accounts', 'organizations', 'rooms');
+        .forRoutes('accounts');
     };
 
     //app.use(["/organizations"],new MockExtractToken().use)
@@ -92,10 +93,10 @@ describe('Account (e2e)', () => {
   it('/(POST) Request to create new account ', async () => {
     await request(app.getHttpServer())
       .post('/accounts')
-      .send(createAccountDto)
+      .send(createAccountPayload)
       .expect(201)
       .then((res) => {
-        let account: CreatedAccountDto = res.body;
+        let account: ReadAccountDto = res.body;
         expect(account).toBeDefined();
         expect(account.blocs.length).toEqual(2);
         expect(account.floors.length).toEqual(3);
@@ -114,7 +115,7 @@ describe('Account (e2e)', () => {
         account.blocs.forEach((bloc, index) => {
           expect(bloc.organizationId).toEqual(account.organization.id);
           expect(bloc.buildingId).toEqual(account.building.id);
-          let floorName = createAccountDto.blocs.floors.find(
+          let floorName = createAccountPayload.blocs.floors.find(
             (_, indexFloor) => index === indexFloor,
           );
 

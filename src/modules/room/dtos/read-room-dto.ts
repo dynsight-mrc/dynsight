@@ -6,13 +6,12 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { Types } from 'mongoose';
 import { ReadPropertyDto } from 'src/modules/wattsense/dtos/properties/read-property.dto';
-
 
 export class ReadRoomDto {
   @IsString()
-  id:string
-
+  id: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()
@@ -20,22 +19,26 @@ export class ReadRoomDto {
 
   @IsString()
   @IsOptional()
-  floor: string;
+  floorId: Types.ObjectId;
 
   @IsString()
   @IsOptional()
-  building: string;
+  buildingId: Types.ObjectId;
 
   @IsString()
   @IsOptional()
-  organization: string;
+  organizationId: Types.ObjectId;
 
   @IsString()
   @IsOptional()
-  zone:string
-  
-  @IsArray()
-  @ValidateNested({each:true})
-  @Type(()=>ReadPropertyDto)
-  properties: ReadPropertyDto[];
+  zone: string;
 }
+
+export type ReadRoomWithFloorId = {
+  id: Types.ObjectId;
+  name: string;
+  floorId?: Types.ObjectId;
+  buildingId?: Types.ObjectId;
+  organizationId?: Types.ObjectId;
+  zone: string;
+};

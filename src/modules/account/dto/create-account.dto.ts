@@ -1,10 +1,14 @@
-
 import { UserRole } from '@modules/user/dto/user.dto';
 import { Type } from 'class-transformer';
-import { IsString, IsNumber, IsArray, IsObject, ValidateNested, IsEmail, IsOptional, ArrayNotEmpty, ArrayMinSize, IsInt, IsMongoId } from 'class-validator';
-
-
-
+import {
+  IsString,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  ArrayNotEmpty,
+  ArrayMinSize,
+  IsInt,
+} from 'class-validator';
 
 class CoordinatesDto {
   @IsNumber()
@@ -14,9 +18,7 @@ class CoordinatesDto {
   long: number;
 }
 
-
-
-export class  BuildingDto {
+export class BuildingDto {
   @IsString()
   reference: string;
 
@@ -29,10 +31,8 @@ export class  BuildingDto {
   @IsNumber()
   surface: number;
 
-
   @IsString()
   type: string;
-  
 }
 
 class FloorsDto {
@@ -65,36 +65,34 @@ class LocationDto {
   @IsString()
   country: string;
   @ValidateNested()
-  @Type(()=>CoordinatesDto)
-  coordinates:CoordinatesDto
+  @Type(() => CoordinatesDto)
+  coordinates: CoordinatesDto;
 }
 
 class BlocsDto {
- 
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  name:string[]
+  name: string[];
 
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  floors: string[]
+  floors: string[];
 
-  
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
-  @IsNumber({},{each:true})
-  surface? : number[]
+  @IsNumber({}, { each: true })
+  surface?: number[];
 
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  type? : string[]
+  type?: string[];
 }
 
 class OrganizationDto {
@@ -121,7 +119,7 @@ class UserDto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
-  @IsString({ each: true })  
+  @IsString({ each: true })
   lastName: string[];
 
   @IsArray()
@@ -142,7 +140,6 @@ class UserDto {
   @IsString({ each: true })
   role: UserRole[];
 }
-
 
 export class CreateAccountDto {
   @ValidateNested()

@@ -3,25 +3,24 @@ import {
   HttpStatus,
   Injectable,
   InternalServerErrorException,
-  Type,
 } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+
+import { InjectModel } from '@nestjs/mongoose';
 import { Organization, OrganizationModel } from '../models/organization.model';
 import { CreateOrganizationDto } from '../dtos/create-organization.dto';
-import { ReadOrganizationDto } from '../dtos/read-organization.dto';
+import { ReadOrganizationDto, ReadOrganizationOverviewDto, ReadOrganizationWithDetailedBuildingsList } from '../dtos/read-organization.dto';
 import { OrganizationServiceHelper } from './organization-helper.service';
-import { ReadOrganizationOverviewDto } from '../dtos/read-organization-overview.dto';
-import mongoose, { Connection, Types } from 'mongoose';
-import {
-  Building,
-  BuildingModel,
-} from '@modules/building/models/building.model';
+import mongoose from 'mongoose';
 import { BuildingService } from '@modules/building/services/building.service';
 import { FloorService } from '@modules/floor/services/floor.service';
 import { RoomService } from '@modules/room/services/room.service';
-import { isInstance } from 'class-validator';
-import { Floor } from '@modules/floor/models/floor.model';
-import { Room } from '@modules/room/models/room.model';
+
+import { ReadBuildingDto } from '@modules/building/dtos/read-building.dto';
+import {
+  ReadFloordWithBuildingId,
+  ReadFloorWithDetailedRoomsList,
+} from '@modules/floor/dtos/read-floor.dto';
+import { ReadRoomWithFloorId } from '@modules/room/dtos/read-room-dto';
 @Injectable()
 export class OrganizationService {
   constructor(
@@ -36,7 +35,7 @@ export class OrganizationService {
   async create(
     createOrganizationDto: CreateOrganizationDto,
     session?: any,
-  ): Promise<Organization> {
+  ): Promise<ReadOrganizationDto> {
     let existingOrganization =
       await this.organizationServiceHelper.checkIfOrganizationExists(
         createOrganizationDto.name,
@@ -53,7 +52,7 @@ export class OrganizationService {
 
       await organizationDoc.save({ session });
 
-      return organizationDoc;
+      return organizationDoc as undefined as ReadOrganizationDto;
     } catch (error) {
       if (error.code === 11000) {
         throw new HttpException(
@@ -66,30 +65,27 @@ export class OrganizationService {
       );
     }
   }
+  async findById(id: string): Promise<ReadOrganizationWithDetailedBuildingsList> {
+    let organization;
 
-  async findById(id: string): Promise<any> {
-    let organization: Organization;
-
-    //Get organization 
+    //Get organization
     try {
-      organization = await this.organizationModel.findOne({ _id: new mongoose.Types.ObjectId(id) });
+      organization = await this.organizationModel.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
     } catch (error) {
       throw new InternalServerErrorException(
         "Erreur s'est produite lors lors de la récupération des données de l'organisation",
       );
     }
-
     //return null and quit if no organization is found
     if (!organization) {
       return null;
     }
+    organization = organization.toJSON()
 
-    //transform object with _id to object with id
-    organization = organization.toJSON();
-
-
-    //find all buildings related to the organization 
-    let buildingsDocs: Building[];
+    //find all buildings related to the organization
+    let buildingsDocs: ReadBuildingDto[];
     try {
       buildingsDocs = await this.buildingService.findByOrganizationId(
         organization.id,
@@ -99,11 +95,12 @@ export class OrganizationService {
         "Erreur s'est produite lors de la récupération  des données des immeubles",
       );
     }
+
     //map from buildings documets => array of buildings ids
     let buildingsIds = buildingsDocs.map((building) => building.id);
 
     //for each building id in buildingsIds, get the related floors
-    let floorsDocs: Partial<Floor>[][];
+    let floorsDocs: ReadFloordWithBuildingId[][];
     try {
       floorsDocs = await this.organizationServiceHelper.mapAsync(
         buildingsIds,
@@ -117,29 +114,27 @@ export class OrganizationService {
 
     //map from floors documents => array of floors ids
     let floorsIds = floorsDocs.flat().map((floor) => floor.id);
-    
+
     //for each floorIds, get all the related blocs
-    let roomsDocs:Partial<Room>[][]
+    let roomsDocs: ReadRoomWithFloorId[][];
     try {
       roomsDocs = await this.organizationServiceHelper.mapAsync(
         floorsIds,
         this.roomService.findByFloorId,
       );
-      
     } catch (error) {
       throw new InternalServerErrorException(
         'Erreur sest produite lors de la récupérations des données des blocs',
       );
     }
-    
-  
-    
 
     //create final object {oganization, buildings:[{..data,floors:[{...data,rooms:[]}]}]}
-    let floors = floorsDocs.flat().map((floor) => ({
-      ...floor,
-      rooms: roomsDocs.flat().filter((room) => room.floorId.equals(floor.id)),
-    }));
+    let floors: ReadFloorWithDetailedRoomsList[] = floorsDocs
+      .flat()
+      .map((floor) => ({
+        ...floor,
+        rooms: roomsDocs.flat().filter((room) => room.floorId.equals(floor.id)),
+      }));
 
     let buildings = buildingsDocs.map((building) => ({
       ...building,

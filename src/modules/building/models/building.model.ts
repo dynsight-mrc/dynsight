@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Model, ObjectId, SchemaType, SchemaTypes, Types } from 'mongoose';
 import { Organization } from '../../organization/models/organization.model';
-import { AddressDto } from '../dtos/create-building.dto';
+import { AddressDto } from '../dtos/building-address.dto';
 
 interface BuildingAttrs {
   reference: string;
@@ -73,6 +73,7 @@ BuildingSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = doc._id;
     delete ret._id;
+    delete ret.__v
   },
 });
 BuildingSchema.index({organizationId:1,name:1},{unique:true})

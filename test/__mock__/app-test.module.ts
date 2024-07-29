@@ -15,7 +15,6 @@ import {
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,13 +27,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     RoomModule,
     UserModule,
     AccountModule,
-    AuthenticationModule
+    AuthenticationModule,
   ],
 })
 export class AppTestModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ExtractToken)
-      .forRoutes('account', 'organizations', 'rooms',"floors","users");
+      .forRoutes('account', 'organizations','buildings', 'rooms',"floors","users");
   }
 }
+//export class AppTestModule {}
