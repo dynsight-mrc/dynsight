@@ -304,6 +304,12 @@ describe('BuildingService', () => {
       expect(buildingDoc.floors[0].rooms.length).toEqual(2)
     });
   });
+  describe('findAllOverview', () => { 
+    it.todo('should throw an error if could not fetch the requsted building for any reasons')
+    it.todo("should throw en error if could not fetch related floors for any reasons")
+    it.todo("should throw error if could not fetch related rooms for any reason")
+    it.todo("should return a list of building with the format ReadBuildingOverview[]")
+   })
   afterEach(() => {
     mockFloorService.findByBuildingId.mockReset();
   });

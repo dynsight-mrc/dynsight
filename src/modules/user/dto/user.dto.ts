@@ -14,6 +14,16 @@ export type UserRole =
   | 'property-manager'
   | 'asset-manager'
   | 'installer';
+export enum UserRoleMap {
+  'root' = 'Root',
+  'admin' = 'Admin',
+  'organization-owner' = 'Organization Owner',
+  'company-occupant' = 'Company Occupant',
+  'facility-manager' = 'Facility Manager',
+  'property-manager' = 'Property Manager',
+  'asset-manager' = 'Asset Manager',
+  'installer' = 'Installer',
+}
 
 export type PersonalInformationDto = {
   firstName: string;

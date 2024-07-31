@@ -22,6 +22,8 @@ import { ReadAccountDto } from '../dto/read-account.dto';
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
+  // /api/accounts
+  // CREATE A USER ACCOUNT (ORGANIZATION,USERS, ONE BUILDING=>FLOOS=>ROOMS) 
   @Post()
   @HttpCode(201)
   create(

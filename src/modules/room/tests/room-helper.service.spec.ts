@@ -142,4 +142,7 @@ describe('Blocs Service Helper', () => {
       });
     });
   });
+  describe('replaceRoomFieldsWithId', () => { 
+    it.todo("should format a room (organization,building, floor) instead of (organizarionId,BuildingId,floorId)")
+   })
 });

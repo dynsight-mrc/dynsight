@@ -143,4 +143,10 @@ describe('UserService', () => {
       expect(users).toEqual(mockReturnedValue);
     });
   });
+
+  describe('findAllOverview', () => { 
+    it.todo('should throw an error if could not fetch the requsted building for any reasons')
+
+    it.todo("should return a list of users with the format ReadUserOverview[]")
+   })
 });

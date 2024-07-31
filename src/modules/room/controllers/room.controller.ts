@@ -19,4 +19,10 @@ import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
 @UseGuards(AuthorizationGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
+
+
+  @Get("overview")
+  findAllOverview(){
+    return this.roomService.findAllOverview()
+  }
 }

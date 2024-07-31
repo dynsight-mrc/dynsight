@@ -9,6 +9,7 @@ import { Building, BuildingModel } from '../models/building.model';
 import { CreateBuildingDto } from '../dtos/create-building.dto';
 import {
   ReadBuildingDto,
+  ReadBuildingOverview,
   ReadBuildingWithDetailedFloorsList,
 } from '../dtos/read-building.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -56,16 +57,18 @@ export class BuildingService {
   }
   async findAll() {}
 
-  async findOne(id: string): Promise<ReadBuildingWithDetailedFloorsList|null> {
-   
+  findOne = async (
+    id: string,
+  ): Promise<ReadBuildingWithDetailedFloorsList | null> => {
+
     let building;
     try {
-      building = await this.buildingModel
-        .findOne({
-          _id: new mongoose.Types.ObjectId(id),
-        })
-        
+      building = await this.buildingModel.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
     } catch (error) {
+      console.log(error);
+
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récuperation de l'immeuble",
       );
@@ -74,15 +77,14 @@ export class BuildingService {
       return null;
     }
     //transform object with _id to object with id
-    building = building.toJSON() as ReadBuildingDto
+    building = building.toJSON() as ReadBuildingDto;
     //map from buildings documets => array of buildings ids
 
     //for each building id in buildingsIds, get the related floors
     let floorsDocs: ReadFloordWithBuildingId[];
     try {
       floorsDocs = await this.floorService.findByBuildingId(building.id);
-      
-    } catch (error) {      
+    } catch (error) {
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récupértion des données des étages",
       );
@@ -114,7 +116,7 @@ export class BuildingService {
       ...building,
       floors,
     };
-  }
+  };
   async findByOrganizationId(
     organizationId: string,
   ): Promise<ReadBuildingDto[]> {
@@ -127,9 +129,69 @@ export class BuildingService {
       if (buildings.length === 0) {
         return [];
       }
-      
-      return buildings.map(building=>building.toJSON());
+
+      return buildings.map((building) => building.toJSON());
     } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur s'est produite lors de la récupération  des données des immeubles",
+      );
+    }
+  }
+
+  async findAllOverview(): Promise<any[]> {
+    let buildingsDocs:Building[];
+    try {
+      buildingsDocs = await this.buildingModel
+        .find()
+        .populate({ path: 'organizationId', select: ['owner', 'name'] });
+
+      if (buildingsDocs.length === 0) {
+        return [];
+      }
+      
+      let buildings = buildingsDocs.map(this.buildingServiceHelper.replaceBuildingOranizationIdField)
+      
+      let buildingsIds = buildings.map((building) => building.id);
+
+      let floors :ReadFloordWithBuildingId[]= await this.buildingServiceHelper.mapAsync(
+        buildingsIds,
+        this.floorService.findByBuildingId,
+      );
+      //let buildingsDocs = await this.findOne('669e2326656ca12333bad333')
+      let floorsIds = floors.flat().map((floor) => floor.id);
+      
+      let rooms :ReadRoomWithFloorId[]= await this.buildingServiceHelper.mapAsync(
+        floorsIds,
+        this.roomService.findByFloorId,
+      );
+      
+      let floorsMapped = floors.flat().map((floor) => {
+        let roomsMapped = rooms
+          .flat()
+          .filter((room) => room.floorId.equals(floor.id));
+
+        return {
+          ...floor,
+          rooms:roomsMapped,
+        };
+      });
+      
+      let buildingsOverview =  buildings.map((building) => {
+        let floorsFiltered = floorsMapped.filter(
+          (floor) => floor.buildingId.equals(building.id),
+        );
+     
+        return {
+          ...building,
+          numberOfFloors:floorsFiltered.length,
+          numberOfRooms:floorsFiltered.map(floor=>floor.rooms).length
+        };
+      });
+      return buildingsOverview
+      
+    } catch (error) {
+      console.log(error);
+
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récupération  des données des immeubles",
       );

@@ -94,4 +94,7 @@ describe('Building (e2e)', () => {
     });
    
   });
+  describe('findAllOverview /(GET) request to get all buildings overview details', () => { 
+    it.todo('should return a list of all buildings with ReadBuildingOverview[]')
+   })
 });

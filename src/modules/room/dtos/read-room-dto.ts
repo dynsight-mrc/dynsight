@@ -42,3 +42,13 @@ export type ReadRoomWithFloorId = {
   organizationId?: Types.ObjectId;
   zone: string;
 };
+
+export type ReadRoomOverview = {
+  id: Types.ObjectId;
+  name: string;
+  floor?: { id: Types.ObjectId; name: string; number: number };
+  building?: { id: Types.ObjectId; name: string };
+  organization?: { id: Types.ObjectId; name: string };
+  sruface?: number;
+  zone?:{id:Types.ObjectId,name:string}
+};

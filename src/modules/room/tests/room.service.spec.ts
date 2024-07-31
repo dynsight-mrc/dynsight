@@ -279,4 +279,8 @@ describe('Blocs Service Helper', () => {
       expect(rooms).toEqual([{ name: 'bloc 1' }, { name: 'bloc 2' }]);
     });
   });
+  describe('findAllOverview', () => { 
+    it.todo('should throw an error if could not fetch the requsted room for any reasons')
+    it.todo("should return a list of building with the format ReadBuildingOverview[]")
+   })
 });

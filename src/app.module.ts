@@ -43,6 +43,6 @@ import { MongodbModule } from './common/databaseConnections/mongodb.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ExtractToken).forRoutes('accounts',"users", 'organizations', 'rooms');
+    consumer.apply(ExtractToken).forRoutes('accounts',"users", 'buildings','organizations', 'rooms');
   }
 }

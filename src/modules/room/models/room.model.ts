@@ -64,6 +64,7 @@ export class Room extends Document {
 
   @Prop({type:Number,required:false})
   surface?:number
+  
   @Prop({type:String,required:false})
   type?:string
 

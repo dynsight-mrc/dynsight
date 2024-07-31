@@ -9,6 +9,7 @@ import {
   CreateFloorDto,
   CreateFloorsDto,
 } from '@modules/floor/dtos/create-floors.dto';
+import { ReadRoomOverview } from '../dtos/read-room-dto';
 
 @Injectable()
 export class RoomServiceHelper {
@@ -76,5 +77,16 @@ export class RoomServiceHelper {
       (promise, val) => promise.then(() => fn(val)),
       Promise.resolve(),
     );
+  }
+  replaceRoomFieldsWithId=(room:Room):ReadRoomOverview=>{
+    let _room = room.toJSON()
+    
+    _room.floor = _room.floorId
+    _room.building = _room.buildingId
+    _room.organization = _room.organizationId
+    delete _room.floorId
+    delete _room.buildingId
+    delete _room.organizationId
+    return _room as undefined as ReadRoomOverview
   }
 }

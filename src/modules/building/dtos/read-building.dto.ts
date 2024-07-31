@@ -32,8 +32,6 @@ export class ReadBuildingDto {
 
 }
 
-
-
 export type ReadBuildingWithDetailedFloorsList = {
   reference: string;
   name: string;
@@ -43,4 +41,19 @@ export type ReadBuildingWithDetailedFloorsList = {
   type: string;
   id: Types.ObjectId;
   floors: ReadFloorWithDetailedRoomsList[];
+};
+
+
+export type ReadBuildingOverview = {
+  id:Types.ObjectId
+  reference: string;
+  name: string;
+  constructionYear: number;
+  surface: number;
+  address: AddressDto;
+  type: string;
+  numberOfFloors: number;
+  numberOfRooms:number;
+  organization:{name:string,owner:string};
+
 };

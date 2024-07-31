@@ -9,7 +9,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Room, RoomModel } from '../models/room.model';
 import { CreateRoomDto } from '../dtos/create-room.dto';
 
-import { ReadRoomDto, ReadRoomWithFloorId } from '../dtos/read-room-dto';
+import {
+  ReadRoomDto,
+  ReadRoomOverview,
+  ReadRoomWithFloorId,
+} from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
 import { CreateRoomsDto } from '../dtos/create-rooms.dto';
 import { RoomServiceHelper } from './room-helper.service';
@@ -171,6 +175,25 @@ export class RoomService {
   }
   async remove(id: string): Promise<any> {
     return await this.roomModel.deleteOne({ _id: id });
+  }
+
+  async findAllOverview(): Promise<any[]> {
+    let roomsDocs: Room[];
+    try {
+      roomsDocs = await this.roomModel.find().populate([
+        { path: 'floorId', select: ['id', 'name', 'number'] },
+        { path: 'buildingId', select: ['id', 'name'] },
+        { path: 'organizationId', select: ['id', 'name'] },
+      ]);
+    } catch (error) {
+      throw new Error('Error while retrieving the rooms data');
+    }
+
+    let rooms = roomsDocs.map(
+      this.roomServiceHelper.replaceRoomFieldsWithId,
+    ) as undefined as ReadRoomOverview[];
+
+    return rooms;
   }
 
   /*  async findOrCreatePropertiesFromDevice(

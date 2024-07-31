@@ -84,4 +84,7 @@ describe('BuildingController', () => {
     });
     
   });
+  describe('findAllOverview', () => { 
+    it.todo('should return a list of buildings with organization name,owner,')
+   })
 });

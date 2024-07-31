@@ -64,4 +64,8 @@ describe('Building Service Helper', () => {
 
     });
   });
+
+  describe('replaceBuildingOranizationIdField', () => { 
+    it.todo("should retrun a formated building with organization field instead of organizationId")
+   })
 });
