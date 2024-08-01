@@ -87,6 +87,7 @@ export class RoomServiceHelper {
     delete _room.floorId
     delete _room.buildingId
     delete _room.organizationId
+
     return _room as undefined as ReadRoomOverview
   }
 }

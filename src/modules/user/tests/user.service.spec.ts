@@ -14,14 +14,14 @@ describe('UserService', () => {
     '668e8c274bf69a2e53bf59f1',
   );
   let mockBuildingId = new mongoose.Types.ObjectId('668e8c274bf69a2e53bf59f2');
-
+  let mockUserId = new mongoose.Types.ObjectId();
   let mockFormtedUsersData = [
     {
       personalInformation: { firstName: 'user 1', lastName: 'last name 1' },
       contactInformation: { email: 'email@dynsight.com' },
       authentication: { username: 'email@dynsight.com', password: 'password' },
       permissions: {
-        role: 'OO',
+        role: 'organization-owner',
         organizationId: mockOrganizationId,
         buildingId: mockBuildingId,
       },
@@ -33,7 +33,7 @@ describe('UserService', () => {
       contactInformation: { email: 'email2@dynsight.com' },
       authentication: { username: 'email2@dynsight.com', password: 'password' },
       permissions: {
-        role: 'FM',
+        role: 'company-occupant',
         organizationId: mockOrganizationId,
         buildingId: mockBuildingId,
       },
@@ -41,10 +41,28 @@ describe('UserService', () => {
       preferences: undefined,
     },
   ];
+  let mockUserDoc = mockFormtedUsersData.map((ele) => ({
+    toJSON: () => ({
+      ...ele,
+      id: new mongoose.Types.ObjectId(),
+      permissions: {
+        ...ele.permissions,
+        organizationId: {
+          id: ele.permissions.organizationId,
+          name: 'dynsight',
+        },
+      },
+    }),
+  }));
+
   let mockUserServiceHelper = {
     formatUsersRawData: jest.fn().mockReturnValue(mockFormtedUsersData),
   };
-  let mockUserModel = { insertMany: jest.fn() };
+  let mockUserModel = {
+    insertMany: jest.fn(),
+    find: jest.fn(),
+    populate: jest.fn(),
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -86,11 +104,16 @@ describe('UserService', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-        expect(error.message).toEqual("Un utilisateur existent déja avec ces paramètres");
+        expect(error.message).toEqual(
+          'Un utilisateur existent déja avec ces paramètres',
+        );
       }
-      expect(mockUserModel.insertMany).toHaveBeenCalledWith(mockFormtedUsersData,{session})
+      expect(mockUserModel.insertMany).toHaveBeenCalledWith(
+        mockFormtedUsersData,
+        { session },
+      );
     });
-    it('should throw error if if users couldn\'t be inserted for any reason', async () => {
+    it("should throw error if if users couldn't be inserted for any reason", async () => {
       let createUsersData: CreateUsersDto = {
         firstName: ['user 1', 'user 2'],
         lastName: ['last name 1', 'last name 2'],
@@ -112,9 +135,14 @@ describe('UserService', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
-        expect(error.message).toEqual("Erreur lors de la création des utilisateurs");
+        expect(error.message).toEqual(
+          'Erreur lors de la création des utilisateurs',
+        );
       }
-      expect(mockUserModel.insertMany).toHaveBeenCalledWith(mockFormtedUsersData,{session})
+      expect(mockUserModel.insertMany).toHaveBeenCalledWith(
+        mockFormtedUsersData,
+        { session },
+      );
     });
     it('should create many users', async () => {
       let createUsersData: CreateUsersDto = {
@@ -144,9 +172,28 @@ describe('UserService', () => {
     });
   });
 
-  describe('findAllOverview', () => { 
-    it.todo('should throw an error if could not fetch the requsted building for any reasons')
+  describe('findAllOverview', () => {
+    it('should throw an error if could not fetch the requsted building for any reasons', async () => {
+      mockUserModel.find.mockReturnThis();
+      mockUserModel.populate.mockRejectedValueOnce(new Error(''));
 
-    it.todo("should return a list of users with the format ReadUserOverview[]")
-   })
+      await expect(() => userService.findAllOverview()).rejects.toThrow(
+        "Erreur s'est produite lors de la récupération des données utilisateurs",
+      );
+    });
+
+    it('should return a list of users with the format ReadUserOverview[]', async () => {
+      mockUserModel.find.mockReturnThis();
+      mockUserModel.populate.mockResolvedValueOnce(mockUserDoc);
+      let users = await userService.findAllOverview();
+      expect(users.length).toEqual(2);
+      expect(users[0].firstName).not.toEqual(undefined);
+      expect(users[0].lastName).not.toEqual(undefined);
+      expect(users[0].id).not.toEqual(undefined);
+      expect(users[0].email).not.toEqual(undefined);
+      expect(users[0].role).not.toEqual(undefined);
+      expect(users[0].organization).not.toEqual(undefined);
+      
+    });
+  });
 });

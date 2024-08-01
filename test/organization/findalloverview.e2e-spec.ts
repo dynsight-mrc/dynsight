@@ -59,7 +59,6 @@ describe('Organization (e2e)', () => {
       let createAccountResponse = await request(app.getHttpServer())
         .post('/accounts')
         .send(createAccountPayload)
-        .withCredentials();
       let account: ReadAccountDto = createAccountResponse.body;
 
       await request(app.getHttpServer())

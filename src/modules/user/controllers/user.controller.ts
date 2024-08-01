@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUsersDto } from '../dto/create-users.dto';
 import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
-
 
 @Controller('users')
 @UseGuards(AuthorizationGuard)
@@ -15,11 +24,17 @@ export class UserController {
   create(@Body() createUserDto: CreateUsersDto) {
     return /* this.userService.createMany(createUserDto) */;
   }
- 
 
-  @Get("overview")
-  findAll() {
-    return this.userService.findAllOverview();
+  @Get('overview')
+  async findAllOverview() {
+    try {
+      let users =  await this.userService.findAllOverview();
+      return users
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur s'est produite lors de la récupération des données utilisateurs",
+      );
+    }
   }
 
   @Get(':id')

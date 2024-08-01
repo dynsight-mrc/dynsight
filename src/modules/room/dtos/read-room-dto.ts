@@ -49,6 +49,6 @@ export type ReadRoomOverview = {
   floor?: { id: Types.ObjectId; name: string; number: number };
   building?: { id: Types.ObjectId; name: string };
   organization?: { id: Types.ObjectId; name: string };
-  sruface?: number;
+  surface?: number;
   zone?:{id:Types.ObjectId,name:string}
 };

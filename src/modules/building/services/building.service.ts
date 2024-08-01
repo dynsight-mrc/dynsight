@@ -60,14 +60,12 @@ export class BuildingService {
   findOne = async (
     id: string,
   ): Promise<ReadBuildingWithDetailedFloorsList | null> => {
-
     let building;
     try {
       building = await this.buildingModel.findOne({
         _id: new mongoose.Types.ObjectId(id),
       });
     } catch (error) {
-      console.log(error);
 
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récuperation de l'immeuble",
@@ -138,64 +136,74 @@ export class BuildingService {
     }
   }
 
-  async findAllOverview(): Promise<any[]> {
-    let buildingsDocs:Building[];
+  async findAllOverview(): Promise<ReadBuildingOverview[]> {
+    let buildingsDocs: Building[];
     try {
       buildingsDocs = await this.buildingModel
         .find()
         .populate({ path: 'organizationId', select: ['owner', 'name'] });
-
-      if (buildingsDocs.length === 0) {
-        return [];
-      }
-      
-      let buildings = buildingsDocs.map(this.buildingServiceHelper.replaceBuildingOranizationIdField)
-      
-      let buildingsIds = buildings.map((building) => building.id);
-
-      let floors :ReadFloordWithBuildingId[]= await this.buildingServiceHelper.mapAsync(
-        buildingsIds,
-        this.floorService.findByBuildingId,
-      );
-      //let buildingsDocs = await this.findOne('669e2326656ca12333bad333')
-      let floorsIds = floors.flat().map((floor) => floor.id);
-      
-      let rooms :ReadRoomWithFloorId[]= await this.buildingServiceHelper.mapAsync(
-        floorsIds,
-        this.roomService.findByFloorId,
-      );
-      
-      let floorsMapped = floors.flat().map((floor) => {
-        let roomsMapped = rooms
-          .flat()
-          .filter((room) => room.floorId.equals(floor.id));
-
-        return {
-          ...floor,
-          rooms:roomsMapped,
-        };
-      });
-      
-      let buildingsOverview =  buildings.map((building) => {
-        let floorsFiltered = floorsMapped.filter(
-          (floor) => floor.buildingId.equals(building.id),
-        );
-     
-        return {
-          ...building,
-          numberOfFloors:floorsFiltered.length,
-          numberOfRooms:floorsFiltered.map(floor=>floor.rooms).length
-        };
-      });
-      return buildingsOverview
-      
     } catch (error) {
-      console.log(error);
-
-      throw new InternalServerErrorException(
+      throw new Error(
         "Erreur s'est produite lors de la récupération  des données des immeubles",
       );
     }
+    if (buildingsDocs.length === 0) {
+      return [];
+    }
+
+    let buildings = buildingsDocs.map(
+      this.buildingServiceHelper.replaceBuildingOranizationIdField,
+    );
+
+    let buildingsIds = buildings.map((building) => building.id);
+    let floors: ReadFloordWithBuildingId[][];
+    try {
+      floors = await this.buildingServiceHelper.mapAsync(
+        buildingsIds,
+        this.floorService.findByBuildingId,
+      );
+    } catch (error) {
+      throw new Error(
+        "Erreur s'est produite lors de la récupération  des données des étages",
+      );
+    }
+  
+    
+    //let buildingsDocs = await this.findOne('669e2326656ca12333bad333')
+    let floorsIds = floors.flat().map((floor) => floor.id);
+    let rooms: ReadRoomWithFloorId[][];
+    try {
+      rooms = await this.buildingServiceHelper.mapAsync(
+        floorsIds,
+        this.roomService.findByFloorId,
+      );
+    } catch (error) {
+      throw new Error("Erreur s'est produite lors de la récupération  des données des blocs")
+    }
+      
+    let floorsMapped = floors.flat().map((floor) => {
+      let roomsMapped = rooms
+        .flat()
+        .filter((room) => room.floorId.equals(floor.id));
+
+      return {
+        ...floor,
+        rooms: roomsMapped,
+      };
+    });
+
+    let buildingsOverview = buildings.map((building) => {
+      let floorsFiltered = floorsMapped.filter((floor) =>
+        floor.buildingId.equals(building.id),
+      );
+
+      return {
+        ...building,
+        numberOfFloors: floorsFiltered.length,
+        numberOfRooms: floorsFiltered.map((floor) => floor.rooms).length,
+      };
+    }) as undefined as ReadBuildingOverview[];
+    return buildingsOverview;
   }
   async update() {}
   async delete() {}

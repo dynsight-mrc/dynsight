@@ -11,6 +11,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { CreateFloorDto } from '@modules/floor/dtos/create-floors.dto';
+import { ReadRoomOverview } from '../dtos/read-room-dto';
 
 describe('Blocs Service Helper', () => {
   let mockRoomModel = {
@@ -18,6 +19,7 @@ describe('Blocs Service Helper', () => {
     find: jest.fn(),
     select: jest.fn(),
     lean: jest.fn(),
+    populate: jest.fn(),
   };
   let roomServiceHelper: RoomServiceHelper;
   let roomService: RoomService;
@@ -26,6 +28,8 @@ describe('Blocs Service Helper', () => {
     '668e8c274bf69a2e53bf59f1',
   );
   let mockBuildingId = new mongoose.Types.ObjectId('668e8c274bf69a2e53bf59f2');
+  let mockFloorId = new mongoose.Types.ObjectId();
+  let mockRoomId = new mongoose.Types.ObjectId();
 
   let mockFloorsDocs: CreateFloorDto[] = [
     {
@@ -43,7 +47,28 @@ describe('Blocs Service Helper', () => {
       organizationId: mockOrganizationId,
     },
   ];
-  beforeEach(async () => {
+
+  let mockPopulatedRoom = {
+    toJSON: () => ({
+      _id: mockRoomId,
+      name: 'bloc 1',
+      floorId: {
+        id: mockFloorId,
+        name: 'etage 1',
+        number: 1,
+      },
+      buildingId: {
+        id: mockBuildingId,
+        name: 'bloc 1',
+      },
+      organizationId: {
+        id: mockOrganizationId,
+        name: 'organization_name',
+      },
+      surface: 25,
+    }),
+  };
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RoomService,
@@ -253,7 +278,9 @@ describe('Blocs Service Helper', () => {
       let mockfloorId = new mongoose.Types.ObjectId();
       let mockReturneValue = [];
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue.map(ele=>({toJSON:()=>ele})));
+      mockRoomModel.select.mockResolvedValueOnce(
+        mockReturneValue.map((ele) => ({ toJSON: () => ele })),
+      );
 
       let rooms = await roomService.findByFloorId(mockfloorId);
 
@@ -268,7 +295,9 @@ describe('Blocs Service Helper', () => {
       let mockfloorId = new mongoose.Types.ObjectId();
       let mockReturneValue = [{ name: 'bloc 1' }, { name: 'bloc 2' }];
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockResolvedValueOnce(mockReturneValue.map(ele=>({toJSON:()=>ele})));
+      mockRoomModel.select.mockResolvedValueOnce(
+        mockReturneValue.map((ele) => ({ toJSON: () => ele })),
+      );
 
       let rooms = await roomService.findByFloorId(mockfloorId);
       expect(mockRoomModel.find).toHaveBeenCalledWith({ floorId: mockfloorId });
@@ -279,8 +308,35 @@ describe('Blocs Service Helper', () => {
       expect(rooms).toEqual([{ name: 'bloc 1' }, { name: 'bloc 2' }]);
     });
   });
-  describe('findAllOverview', () => { 
-    it.todo('should throw an error if could not fetch the requsted room for any reasons')
-    it.todo("should return a list of building with the format ReadBuildingOverview[]")
-   })
+  describe('findAllOverview', () => {
+    it('should throw an error if could not fetch the requsted room for any reasons', async () => {
+      /*  mockRoomModel.find.mockReturnThis();
+      mockRoomModel.populate.mockResolvedValue(mockPopulatedRoom);
+ */
+      jest.spyOn(roomModel, 'find').mockReturnThis();
+      jest.spyOn(roomModel, 'populate').mockRejectedValueOnce(new Error(''));
+
+      /* try {
+        await roomService.findAllOverview();
+      } catch (error) {
+        expect(error).toEqual('Error while retrieving the rooms data');
+      }
+       */
+
+      await expect(() => roomService.findAllOverview()).rejects.toThrow(
+        'Error while retrieving the rooms data',
+      );
+    });
+    it('should return a list of building with the format ReadBuildingOverview[]', async () => {
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.populate.mockResolvedValueOnce([mockPopulatedRoom]);
+
+      let rooms: ReadRoomOverview[] = await roomService.findAllOverview();
+      expect(rooms).toBeDefined();
+      expect(rooms.length).toEqual(1);
+      expect(rooms[0].floor).not.toEqual(undefined);
+      expect(rooms[0].building).not.toEqual(undefined);
+      expect(rooms[0].organization).not.toEqual(undefined);
+    });
+  });
 });

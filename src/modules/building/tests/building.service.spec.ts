@@ -17,7 +17,7 @@ describe('BuildingService', () => {
     findByBuildingId: jest.fn(),
   };
   let mockRoomService = {
-    findByFloorId:jest.fn()
+    findByFloorId: jest.fn(),
   };
   let mockBuildingId = new mongoose.Types.ObjectId();
 
@@ -63,7 +63,26 @@ describe('BuildingService', () => {
     find: jest.fn(),
     select: jest.fn(),
     lean: jest.fn(),
+    populate: jest.fn(),
   };
+
+  let mockBuildingDoc = {
+    id: mockBuildingId,
+    reference: 'string',
+    name: 'string',
+    constructionYear: 2012,
+    surface: 290,
+    coordinates: {
+      lat: 123,
+      long: 123,
+    },
+    type: 'industry',
+    organizationId: { name: 'organization', owner: 'owner' },
+  };
+  let mockBuildingOverview = {
+    toJSON: () => ({...mockBuildingDoc}),
+  };
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -263,7 +282,9 @@ describe('BuildingService', () => {
       expect(building).toBe(null);
     });
     it('should throw error if could not fetch the related floors for any reasons', async () => {
-      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+      mockBuildingModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockBuilding,
+      });
       mockFloorService.findByBuildingId.mockRejectedValueOnce(new Error(''));
       try {
         await buildingService.findOne(mockBuildingId.toString());
@@ -276,12 +297,12 @@ describe('BuildingService', () => {
       }
     });
     it('should throw error if could not fetch related rooms for ant reason', async () => {
-      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+      mockBuildingModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockBuilding,
+      });
 
       mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
-      mockRoomService.findByFloorId.mockRejectedValueOnce(
-        new Error(""),
-      );
+      mockRoomService.findByFloorId.mockRejectedValueOnce(new Error(''));
       try {
         await buildingService.findOne(mockBuildingId.toString());
       } catch (error) {
@@ -292,24 +313,67 @@ describe('BuildingService', () => {
         );
       }
     });
-    it('should return the requested building with the related entites',async()=>{
-      mockBuildingModel.findOne.mockResolvedValueOnce(({toJSON : ()=>mockBuilding}));
+    it('should return the requested building with the related entites', async () => {
+      mockBuildingModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockBuilding,
+      });
       mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
-      mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs)
-      let buildingDoc = await buildingService.findOne(mockBuildingId.toString());
+      mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs);
+      let buildingDoc = await buildingService.findOne(
+        mockBuildingId.toString(),
+      );
 
-
-      expect(buildingDoc).toBeDefined()
-      expect(buildingDoc.floors.length).toEqual(1)
-      expect(buildingDoc.floors[0].rooms.length).toEqual(2)
+      expect(buildingDoc).toBeDefined();
+      expect(buildingDoc.floors.length).toEqual(1);
+      expect(buildingDoc.floors[0].rooms.length).toEqual(2);
     });
   });
-  describe('findAllOverview', () => { 
-    it.todo('should throw an error if could not fetch the requsted building for any reasons')
-    it.todo("should throw en error if could not fetch related floors for any reasons")
-    it.todo("should throw error if could not fetch related rooms for any reason")
-    it.todo("should return a list of building with the format ReadBuildingOverview[]")
-   })
+  describe('findAllOverview', () => {
+    it('should throw an error if could not fetch the requsted building for any reasons', async () => {
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.populate.mockRejectedValueOnce(new Error(''));
+
+      await expect(() => buildingService.findAllOverview()).rejects.toThrow(
+        "Erreur s'est produite lors de la récupération  des données des immeubles",
+      );
+    });
+    it('should throw en error if could not fetch related floors for any reasons', async () => {
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.populate.mockResolvedValueOnce([mockBuildingOverview]);
+
+      mockFloorService.findByBuildingId.mockRejectedValueOnce(new Error(''));
+
+      await expect(() => buildingService.findAllOverview()).rejects.toThrow(
+        "Erreur s'est produite lors de la récupération  des données des étages",
+      );
+    });
+    it('should throw error if could not fetch related rooms for any reason', async () => {
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.populate.mockResolvedValueOnce([mockBuildingOverview]);
+
+      mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.findByFloorId.mockRejectedValueOnce(new Error(''));
+
+      await expect(() => buildingService.findAllOverview()).rejects.toThrow(
+        "Erreur s'est produite lors de la récupération  des données des blocs",
+      );
+    });
+    it('should return a list of building with the format ReadBuildingOverview[]', async () => {
+      mockBuildingModel.find.mockReturnThis();
+      mockBuildingModel.populate.mockResolvedValueOnce([mockBuildingOverview]);
+
+      mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs);
+
+      let buildings = await buildingService.findAllOverview()
+      expect(buildings).toBeDefined()
+      expect(buildings.length).toEqual(1)
+      expect(buildings[0].numberOfFloors).toEqual(1)
+      expect(buildings[0].numberOfRooms).toEqual(1)
+      
+
+    });
+  });
   afterEach(() => {
     mockFloorService.findByBuildingId.mockReset();
   });

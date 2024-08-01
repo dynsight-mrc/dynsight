@@ -49,6 +49,20 @@ describe('BuildingController', () => {
   let mockBuildingService = {
     findOne: jest.fn().mockResolvedValueOnce(mockBuilding),
     findByOrganizationId: jest.fn().mockResolvedValueOnce([mockBuilding]),
+    findAllOverview: jest.fn().mockResolvedValueOnce([
+      {
+        id: new mongoose.Types.ObjectId(),
+        reference: 'string',
+        name: 'string',
+        constructionYear: 2012,
+        surface: 290,
+        coordinates: { lat: 123, long: 123 },
+        type: 'industry',
+        organization: { name: 'organization', owner: 'owner' },
+        numberOfFloors: 1,
+        numberOfRooms: 1,
+      },
+    ]),
   };
 
   beforeEach(async () => {
@@ -82,9 +96,12 @@ describe('BuildingController', () => {
       expect(buildings).toBeDefined();
       expect(buildings.length).toEqual(1);
     });
-    
   });
-  describe('findAllOverview', () => { 
-    it.todo('should return a list of buildings with organization name,owner,')
-   })
+  describe('findAllOverview', () => {
+    it('should return a list of buildings with organization name,owner,', async () => {
+      let buildings = await buildingController.findAllOverview();
+      expect(buildings).toBeDefined();
+      expect(buildings.length).toEqual(1);
+    });
+  });
 });

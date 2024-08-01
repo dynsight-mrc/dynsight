@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {  INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { Connection } from 'mongoose';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -8,59 +8,16 @@ import { MockExtractToken } from '../__mock__/mockExtractTokenMiddleware';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppTestModule } from '../__mock__/app-test.module';
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
-
-
-
+import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
+import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
+import { UserService } from '@modules/user/services/user.service';
 
 describe('Account (e2e)', () => {
   let app: INestApplication;
-  /* let createAccountDto: CreateAccountDto = {
-    building: {
-      reference: 'building mine pro',
-      name: 'building mine pro max',
-      constructionYear: 2003,
-      surface: 250,
-      type: 'commercial',
-    },
-    floors: {
-      name: ['etage 1', 'etage 2', 'etage 3'],
-      number: [1, 2, 3],
-    },
-    blocs: {
-      name: ['bloc 1', 'bloc 2'],
-      type: ['office', 'storage'],
-      surface: [200, 400],
-      floors: ['etage 1', 'etage 3'],
-    },
-    users: {
-      firstName: ['user 1'],
-      lastName: ['lastname 1'],
-      email: ['emailz@dynsight.fr'],
-      password: ['password'],
-      role: ['organization-owner'],
-    },
-    organization: {
-      reference: 'MINE pro max',
-      name: 'MINE pro max',
-      description: 'MINE',
-      owner: 'MINE',
-    },
-    location: {
-      streetAddress: '123 MINE LOCATION',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-  }; */
+
   let connection: Connection;
   let replSet: MongoMemoryReplSet;
+  let userService: UserService;
   beforeAll(async () => {
     replSet = await MongoMemoryReplSet.create({
       replSet: { count: 1 },
@@ -78,9 +35,7 @@ describe('Account (e2e)', () => {
     app = moduleFixture.createNestApplication();
     const appModule = app.get(AppTestModule);
     appModule.configure = (consumer) => {
-      consumer
-        .apply(MockExtractToken)
-        .forRoutes('users');
+      consumer.apply(MockExtractToken).forRoutes('users');
     };
 
     //app.use(["/organizations"],new MockExtractToken().use)
@@ -89,6 +44,35 @@ describe('Account (e2e)', () => {
     connection = moduleFixture.get<Connection>(getConnectionToken());
   });
 
-  it.todo('/(GET) Request to get users overview list ');
+  it('/(GET) Request to get users overview list ', async () => {
+    let req = request(app.getHttpServer());
+    let createAccountResponse = await req
+      .post('/accounts')
+      .send(createAccountPayload);
+    let account: ReadAccountDto = createAccountResponse.body;
 
+    await req
+      .get('/users/overview')
+      .expect(200)
+      .then((res) => {
+        let users = res.body;
+        users.map((user) => {
+          expect(user).toEqual({
+            id: expect.any(String),
+            firstName: expect.any(String),
+            lastName: expect.any(String),
+            email: expect.any(String),
+            role: expect.any(String),
+            organization: expect.any(String),
+          });
+        });
+      });
+  });
+
+  /* it(' /(GET) Request should throw internalServerErrorException if any error occurs', async () => {
+    jest
+      .spyOn(userService, 'findAllOverview')
+      .mockRejectedValueOnce(new Error(''));
+    await request(app.getHttpServer).get('/users/overview').expect(500);
+  }); */
 });

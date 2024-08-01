@@ -59,9 +59,8 @@ export class UserService {
         select: ['id', 'name'],
       });
     } catch (error) {
-      throw new Error('');
+      throw new Error("Erreur s'est produite lors de la récupération des données utilisateurs");
     }
-    console.log(usersDocs[0].permissions);
     
     let users: ReadUserOverview[] = usersDocs
       .map((user) => user.toJSON())

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Building, BuildingModel } from '../models/building.model';
 import { BuildingServiceHelper } from '../services/building-helper.service';
+import mongoose from 'mongoose';
 
 describe('Building Service Helper', () => {
   let buildngServiceHelper: BuildingServiceHelper;
@@ -9,7 +10,7 @@ describe('Building Service Helper', () => {
   let mockBuildingService = {
     findOne:jest.fn()
   };
-
+  let mockOrganizationId= new mongoose.Types.ObjectId()
   let mockBuilding = {
     reference: 'string',
     name: 'string',
@@ -21,6 +22,9 @@ describe('Building Service Helper', () => {
     },
     type: 'industry',
   };
+  let mockBuildingOverviewDoc = {
+    toJSON:()=>({...mockBuilding,organizationId:{name:"organization",owner:"owner"}})
+  }
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +70,12 @@ describe('Building Service Helper', () => {
   });
 
   describe('replaceBuildingOranizationIdField', () => { 
-    it.todo("should retrun a formated building with organization field instead of organizationId")
+    it("should return a formated building with organization field instead of organizationId",async()=>{
+      let building = buildngServiceHelper.replaceBuildingOranizationIdField(mockBuildingOverviewDoc as undefined as Building)
+      expect(building.organization).not.toEqual(undefined)
+      expect(building.organization.name).toBeDefined()
+      expect(building.organization.owner).toBeDefined()
+      expect(building.organizationId).not.toBeDefined()
+    })
    })
 });

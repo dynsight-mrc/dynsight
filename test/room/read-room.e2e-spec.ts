@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -11,10 +11,6 @@ import { MockGuard } from '../__mock__/mockGuard';
 import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
 import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
 import { MockExtractToken } from '../__mock__/mockExtractTokenMiddleware';
-import {
-  ReadOrganizationOverviewDto,
-  ReadOrganizationWithDetailedBuildingsList,
-} from '@modules/organization/dtos/read-organization.dto';
 
 describe('Organization (e2e)', () => {
   let app: INestApplication;
@@ -54,7 +50,35 @@ describe('Organization (e2e)', () => {
       await collection.drop();
     }
   });
-  describe('findAllOverview /(GET) request to get all rooms overview details', () => { 
-    it.todo('should return a list of all buildings with ReadRoomOverview[]')
-   })
+  describe('findAllOverview /(GET) request to get all rooms overview details', () => {
+    it('should return a list of all buildings with ReadRoomOverview[]', async () => {
+      let req =   request(app.getHttpServer())
+      let createAccountResponse = await req
+        .post('/accounts')
+        .send(createAccountPayload);
+      let account: ReadAccountDto = createAccountResponse.body;
+      
+      await req.get('/rooms/overview')
+      .expect(200)
+      .then(res=>{
+        let rooms = res.body
+        console.log(rooms);
+        rooms.map(room=>{
+          expect(room).toEqual(
+            {
+              name: expect.any(String),
+              surface: expect.any(Number),
+              type: expect.any(String),
+              id: expect.any(String),
+              floor: { number:  expect.any(Number), name: expect.any(String), id: expect.any(String)},
+              building: { name: expect.any(String), id: expect.any(String)},
+              organization: { name: expect.any(String), id: expect.any(String) }
+            })
+        })
+       
+        
+      })
+      
+    });
+  });
 });
