@@ -8,12 +8,14 @@ import {
   Delete,
   UseGuards,
   InternalServerErrorException,
+  Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUsersDto } from '../dto/create-users.dto';
 import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
+import { ReadUserByOrganizationId } from '../dto/read-user.dto';
 
 @Controller('users')
 @UseGuards(AuthorizationGuard)
@@ -28,8 +30,8 @@ export class UserController {
   @Get('overview')
   async findAllOverview() {
     try {
-      let users =  await this.userService.findAllOverview();
-      return users
+      let users = await this.userService.findAllOverview();
+      return users;
     } catch (error) {
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récupération des données utilisateurs",
@@ -40,6 +42,18 @@ export class UserController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);
+  }
+
+  @Get('')
+  async findByOrganizationId(@Query('organization') organization: string) {
+    try {
+      let users = await this.userService.findByOrganizationId(organization);
+      return users
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur s'est produite lors de la récupération de la liste des utilisateus",
+      );
+    }
   }
 
   @Patch(':id')

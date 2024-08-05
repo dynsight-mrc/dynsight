@@ -48,7 +48,7 @@ describe('Building (e2e)', () => {
       await collection.drop();
     }
   });
-  describe('findOne /(GET) Request to get building by id (with all related entities)', () => {
+  describe('(GET) /buildings/:id', () => {
     it('should return an a building (with related entities)', async () => {
       let createAccountResponse = await request(app.getHttpServer())
         .post('/accounts')
@@ -70,9 +70,10 @@ describe('Building (e2e)', () => {
           expect(building).toEqual(account.building);
         });
     });
-    it('should return error if could not retrieve the building', async () => {});
+    it.todo('should return error if could not retrieve the building'
+    );
   });
-  describe('findByOrganizationId /(GET) Request to get  building by organizationId (with all related entities)', () => {
+  describe('(GET) /buildings?organization', () => {
     it('should return a list of buildings (with related entities)', async () => {
       let createAccountResponse = await request(app.getHttpServer())
         .post('/accounts')
@@ -94,7 +95,7 @@ describe('Building (e2e)', () => {
     });
    
   });
-  describe('findAllOverview /(GET) request to get all buildings overview details', () => { 
+  describe('(GET) /buildings/overview', () => { 
     it.todo('should return a list of all buildings with ReadBuildingOverview[]')
    })
 });

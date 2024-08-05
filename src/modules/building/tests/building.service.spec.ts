@@ -2,24 +2,41 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BuildingService } from '../services/building.service';
 import { BuildingServiceHelper } from '../services/building-helper.service';
 import { Building, BuildingModel } from '../models/building.model';
-import { getModelToken } from '@nestjs/mongoose';
+import {
+  getConnectionToken,
+  getModelToken,
+  InjectConnection,
+} from '@nestjs/mongoose';
 import { HttpException, InternalServerErrorException } from '@nestjs/common';
-import { CreateBuildingDto } from '../dtos/create-building.dto';
-import mongoose, { mongo } from 'mongoose';
+import mongoose, { Connection, mongo, startSession, Types } from 'mongoose';
 import { RoomService } from '@modules/room/services/room.service';
 import { FloorService } from '@modules/floor/services/floor.service';
+import {
+  CreateBuildingDto,
+  CreateBuildingWithRelatedEntities,
+} from '../dtos/create-building.dto';
 
 describe('BuildingService', () => {
   let buildingService: BuildingService;
   let buildngServiceHelper: BuildingServiceHelper;
-  let buildingModel: BuildingModel;
+  let mockConnection = {
+    startSession: jest.fn().mockResolvedValue({
+      startTransaction: jest.fn(),
+      abortTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      endSession: jest.fn(),
+    }),
+  };
   let mockFloorService = {
     findByBuildingId: jest.fn(),
+    createMany: jest.fn(),
   };
   let mockRoomService = {
     findByFloorId: jest.fn(),
+    createMany: jest.fn(),
   };
   let mockBuildingId = new mongoose.Types.ObjectId();
+  let mockOrganizationId = new mongoose.Types.ObjectId().toString();
 
   let mockBuilding = {
     id: mockBuildingId,
@@ -34,7 +51,7 @@ describe('BuildingService', () => {
       streetName: 'Main St',
       city: 'Paris',
       state: 'Île-de-France',
-      postalCode: '75001',
+      postalCode: 75001,
       country: 'France',
       coordinates: {
         lat: 123,
@@ -43,6 +60,39 @@ describe('BuildingService', () => {
     },
     type: 'industry',
     save: jest.fn().mockResolvedValue(true),
+  };
+
+  let createBuildingWithRelatedEntites: CreateBuildingWithRelatedEntities = {
+    building: {
+      reference: 'building mine pro',
+      name: 'building mine pro',
+      constructionYear: 2003,
+      surface: 250,
+      type: 'commercial',
+    },
+    floors: {
+      name: ['etage 1', 'etage 2', 'etage 3'],
+      number: [1, 2, 3],
+    },
+    blocs: {
+      name: ['bloc 1', 'bloc 2'],
+      type: ['office', 'storage'],
+      surface: [200, 400],
+      floors: ['etage 1', 'etage 3'],
+    },
+    location: {
+      streetAddress: '123 MINE LOCATION',
+      streetNumber: '123',
+      streetName: 'Main St',
+      city: 'Paris',
+      state: 'Île-de-France',
+      postalCode: 75001,
+      country: 'France',
+      coordinates: {
+        lat: 123,
+        long: 3344,
+      },
+    },
   };
   const mockFloorsDocs = [
     {
@@ -59,7 +109,7 @@ describe('BuildingService', () => {
   ];
   let mockBuildingModel = {
     findOne: jest.fn(),
-    build: jest.fn().mockReturnValue(mockBuilding),
+    build: jest.fn(),
     find: jest.fn(),
     select: jest.fn(),
     lean: jest.fn(),
@@ -80,7 +130,7 @@ describe('BuildingService', () => {
     organizationId: { name: 'organization', owner: 'owner' },
   };
   let mockBuildingOverview = {
-    toJSON: () => ({...mockBuildingDoc}),
+    toJSON: () => ({ ...mockBuildingDoc }),
   };
 
   beforeAll(async () => {
@@ -94,6 +144,10 @@ describe('BuildingService', () => {
         },
         { provide: RoomService, useValue: mockRoomService },
         { provide: FloorService, useValue: mockFloorService },
+        {
+          provide: getConnectionToken('Database'),
+          useValue: mockConnection,
+        },
       ],
     }).compile();
 
@@ -101,7 +155,7 @@ describe('BuildingService', () => {
     buildngServiceHelper = module.get<BuildingServiceHelper>(
       BuildingServiceHelper,
     );
-    buildingModel = module.get<BuildingModel>(getModelToken(Building.name));
+    //buildingModel = module.get<BuildingModel>(getModelToken(Building.name));
   });
 
   it('should be defined', () => {
@@ -152,7 +206,7 @@ describe('BuildingService', () => {
         .mockResolvedValue(false);
       let session = {};
       let organizationId = new mongoose.Types.ObjectId();
-
+      mockBuildingModel.build.mockReturnValueOnce(mockBuilding);
       let createBuildingDto = {
         reference: 'string',
         name: 'string',
@@ -179,7 +233,7 @@ describe('BuildingService', () => {
         session,
       );
 
-      expect(buildingModel.build).toHaveBeenCalledWith(createBuildingDto);
+      expect(mockBuildingModel.build).toHaveBeenCalledWith(createBuildingDto);
       expect(mockBuilding.save).toHaveBeenCalled();
       expect(createdBuilding).toEqual(mockBuilding);
     });
@@ -365,13 +419,167 @@ describe('BuildingService', () => {
       mockFloorService.findByBuildingId.mockResolvedValueOnce(mockFloorsDocs);
       mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs);
 
-      let buildings = await buildingService.findAllOverview()
-      expect(buildings).toBeDefined()
-      expect(buildings.length).toEqual(1)
-      expect(buildings[0].numberOfFloors).toEqual(1)
-      expect(buildings[0].numberOfRooms).toEqual(1)
+      let buildings = await buildingService.findAllOverview();
+      expect(buildings).toBeDefined();
+      expect(buildings.length).toEqual(1);
+      expect(buildings[0].numberOfFloors).toEqual(1);
+      expect(buildings[0].numberOfRooms).toEqual(1);
+    });
+  });
+
+  describe('createBuildingWithRelatedEntites', () => {
+    it('should throw error if could not create the building for any reason', async () => {
+      //mockBuildingModel.build.mockReturnValueOnce(mockBuildingWithRejection);
+      jest.spyOn(mockBuildingModel, 'build').mockReturnValueOnce({
+        save: jest.fn().mockRejectedValueOnce(new Error('')),
+      });
+      await expect(
+        buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        ),
+      ).rejects.toThrow("Erreur lors de la création de l'immeuble");
+    });
+    it('should throw error if the building already exist (organizarionId,name)', async () => {
+      //mockBuildingModel.build.mockReturnValueOnce(mockBuildingWithRejection);
+      jest.spyOn(mockBuildingModel, 'build').mockReturnValueOnce({
+        save: jest.fn().mockRejectedValueOnce({ code: 11000 }),
+      });
+      await expect(
+        buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        ),
+      ).rejects.toThrow('Immeuble existe déja avec ces paramètres');
+    });
+    it('should throw error if could not create the floors for any reason', async () => {
+      mockBuildingModel.build.mockReturnValueOnce({
+        save: jest.fn().mockResolvedValueOnce(mockBuilding),
+        toJSON: () => mockBuilding,
+      });
+      jest
+        .spyOn(mockFloorService, 'createMany')
+        .mockRejectedValueOnce(new Error(''));
+      try {
+        await buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        );
+      } catch (error) {
+        expect(error.message).toEqual('Erreur lors de la création des étages');
+      }
+    });
+    it('should throw error if any floor already existe (organizaitonId, buildingId,name,number)', async () => {
+      mockBuildingModel.build.mockReturnValueOnce({
+        save: jest.fn().mockResolvedValueOnce(mockBuilding),
+        toJSON: () => mockBuilding,
+      });
+      jest
+        .spyOn(mockFloorService, 'createMany')
+        .mockRejectedValueOnce({ code: 409 });
+      try {
+        await buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        );
+      } catch (error) {
+        expect(error.message).toEqual(
+          'Étage(s) existe(nt) déja avec ces paramètres',
+        );
+      }
+    });
+    it('should throw error if could not create the blocs for any reason', async () => {
+      mockBuildingModel.build.mockReturnValueOnce({
+        save: jest.fn().mockResolvedValueOnce(mockBuilding),
+        toJSON: () => mockBuilding,
+      });
+      mockFloorService.createMany.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.createMany.mockRejectedValueOnce(new Error(''));
+      try {
+        await buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        );
+      } catch (error) {
+        expect(error.message).toEqual('Erreur lors de la création des blocs');
+      }
+    });
+    it('should throw error if a bloc already exist (building,name)', async () => {
+      mockBuildingModel.build.mockReturnValueOnce({
+        save: jest.fn().mockResolvedValueOnce(mockBuilding),
+        toJSON: () => mockBuilding,
+      });
+      mockFloorService.createMany.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.createMany.mockRejectedValueOnce({ code: 409 });
+      try {
+        await buildingService.createBuildingWithRelatedEntites(
+          createBuildingWithRelatedEntites,
+          mockOrganizationId,
+        );
+      } catch (error) {
+        expect(error.message).toEqual(
+          'Bloc(s) existe(nt) déja avec ces paramètres',
+        );
+      }
+    });
+    it('should return all the created entities, building, floors[],rooms[]', async () => {
+      let buildingDoc = { ...mockBuilding };
+      delete buildingDoc.save;
+      mockBuildingModel.build.mockReturnValueOnce({
+        save: jest.fn().mockResolvedValueOnce(buildingDoc),
+        toJSON: () => buildingDoc,
+      });
+      mockFloorService.createMany.mockResolvedValueOnce(mockFloorsDocs);
+      mockRoomService.createMany.mockResolvedValueOnce(mockRoomsDocs);
+      let results = await buildingService.createBuildingWithRelatedEntites(
+        createBuildingWithRelatedEntites,
+        mockOrganizationId,
+      );
       
 
+      expect(results).toBeDefined();
+      
+      expect(results.building).toBeDefined();
+      expect(results.building).toEqual({
+        id: expect.any(Types.ObjectId),
+        reference: expect.any(String),
+        name: expect.any(String),
+        constructionYear: expect.any(Number),
+        surface: expect.any(Number),
+        type: expect.any(String),
+        address: {
+          streetAddress: expect.any(String),
+          streetNumber: expect.any(String),
+          streetName: expect.any(String),
+          city: expect.any(String),
+          state: expect.any(String),
+          postalCode: expect.any(Number),
+          country: expect.any(String),
+          coordinates: {
+            lat: expect.any(Number),
+            long: expect.any(Number),
+          },
+        },
+        organizationId: expect.any(Types.ObjectId),
+      });
+      expect(results.floors).toBeDefined();
+      results.floors.forEach((floor) =>
+        expect({
+          name: expect.any(String),
+          id: expect.any(Types.ObjectId),
+          number: expect.any(Number),
+          buildingId: expect.any(Types.ObjectId),
+        }),
+      );
+      expect(results.blocs).toBeDefined();
+      results.blocs.forEach((bloc) =>
+        expect({
+          name: expect.any(String),
+          floorId: expect.any(Types.ObjectId),
+        }),
+      );
+      expect(results.organization).toBeDefined()
+      expect(results.organization).toEqual(expect.any(Types.ObjectId))
     });
   });
   afterEach(() => {

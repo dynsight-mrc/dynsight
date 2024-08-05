@@ -2,7 +2,9 @@ import { Type } from 'class-transformer';
 import { IsString, ValidateNested, IsInt, IsMongoId, IsNumber } from 'class-validator';
 import { Types } from 'mongoose';
 import { AddressDto } from './building-address.dto';
-import { ReadFloorWithDetailedRoomsList } from '@modules/floor/dtos/read-floor.dto';
+import { ReadFloorDto, ReadFloorWithDetailedRoomsList } from '@modules/floor/dtos/read-floor.dto';
+import { ReadRoomDto } from '@modules/room/dtos/read-room-dto';
+import { ReadUserDto } from '@modules/user/dto/read-user.dto';
 
 export class ReadBuildingDto {
   @IsString()
@@ -56,4 +58,12 @@ export type ReadBuildingOverview = {
   numberOfRooms:number;
   organization:{name:string,owner:string};
 
+};
+
+
+export type ReadCreatedBuildingDto = {
+  organization: Types.ObjectId;
+  building: ReadBuildingDto;
+  floors: ReadFloorDto[];
+  blocs: ReadRoomDto[];
 };

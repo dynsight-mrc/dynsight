@@ -4,14 +4,15 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ReadUserOverview, UpdateUserDto } from '../dto/update-user.dto';
+import { ReadUserByOrganizationId, ReadUserOverview } from '../dto/read-user.dto';
 import { CreateUsersDto } from '../dto/create-users.dto';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { UserServiceHelper } from './user-helper.service';
 import { UserAccount, UserAccountModel } from '../models/user.model';
 import { InjectModel } from '@nestjs/mongoose';
 import { ReadUserDto } from '../dto/read-user.dto';
 import { UserRoleMap } from '../dto/user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -79,6 +80,26 @@ export class UserService {
 
   findOne(id: number) {
     return `This action returns a #${id} user`;
+  }
+
+  async findByOrganizationId(organization:string):Promise<ReadUserByOrganizationId[]>{
+    let usersDocs: UserAccount[];
+    try {
+      usersDocs = await this.userModel.find({'permissions.organizationId':new mongoose.Types.ObjectId(organization)})
+      let users: ReadUserByOrganizationId[] = usersDocs
+      .map((user) => user.toJSON())
+      .filter(user=>user.permissions.role!=="admin")
+      .map((user) => ({
+        id:user.id,
+        firstName: user.personalInformation.firstName,
+        lastName: user.personalInformation.lastName,
+        email: user.contactInformation.email,
+        role: UserRoleMap[user.permissions.role],
+      }));
+      return users
+    } catch (error) {
+      throw new Error("Erreur s'est produite lors de la récupération des données utilisateurs");
+    }
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

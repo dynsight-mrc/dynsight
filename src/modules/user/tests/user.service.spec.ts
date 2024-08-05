@@ -3,7 +3,7 @@ import { UserService } from '../services/user.service';
 import { UserServiceHelper } from '../services/user-helper.service';
 import { UserAccount, UserAccountModel } from '../models/user.model';
 import { getModelToken } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { CreateUsersDto } from '../dto/create-users.dto';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
@@ -187,13 +187,46 @@ describe('UserService', () => {
       mockUserModel.populate.mockResolvedValueOnce(mockUserDoc);
       let users = await userService.findAllOverview();
       expect(users.length).toEqual(2);
-      expect(users[0].firstName).not.toEqual(undefined);
-      expect(users[0].lastName).not.toEqual(undefined);
-      expect(users[0].id).not.toEqual(undefined);
-      expect(users[0].email).not.toEqual(undefined);
-      expect(users[0].role).not.toEqual(undefined);
-      expect(users[0].organization).not.toEqual(undefined);
+      users.forEach((user) => {
+        expect(user).toEqual({
+          id: expect.any(Types.ObjectId),
+          firstName: expect.any(String),
+          lastName: expect.any(String),
+          email: expect.any(String),
+          role: expect.any(String),
+          
+          organization:expect.any(String),
+        });
+      });
+   
+    });
+  });
+
+  describe('findByOrganizationId', () => {
+    it('should throw an error if could not retrieve users data for any reason', async () => {
+      mockUserModel.find.mockRejectedValueOnce(new Error(''));
+      await expect(() =>
+        userService.findByOrganizationId(mockOrganizationId.toString()),
+      ).rejects.toThrow(
+        "Erreur s'est produite lors de la récupération des données utilisateurs",
+      );
+    });
+    it('should return a list of users of with specific organization id, with the format ReadUserByOrganizationId[]', async () => {
+      mockUserModel.find.mockResolvedValueOnce(mockUserDoc);
+      let users = await userService.findByOrganizationId(
+        mockOrganizationId.toString(),
+      );
       
+      expect(users.length).toEqual(2);
+      users.forEach((user) => {
+        expect(user).toEqual({
+          id: expect.any(Types.ObjectId),
+          firstName: expect.any(String),
+          lastName: expect.any(String),
+          email: expect.any(String),
+          role: expect.any(String),
+        });
+      });
     });
   });
 });

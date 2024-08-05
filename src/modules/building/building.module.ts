@@ -7,12 +7,13 @@ import { BuildingServiceHelper } from './services/building-helper.service';
 import { OrganizationModule } from '../organization/organization.module';
 import { FloorModule } from '@modules/floor/floor.module';
 import { RoomModule } from '@modules/room/room.module';
+import { MongodbModule } from '@common/databaseConnections/mongodb.module';
 
 @Module({
   imports:[MongooseModule.forFeature([{
     name:Building.name,
     schema:BuildingSchema
-  }]),FloorModule,RoomModule],
+  }]),FloorModule,RoomModule,MongodbModule],
   providers: [BuildingService,BuildingServiceHelper],
   controllers: [BuildingController],
   exports:[BuildingService]

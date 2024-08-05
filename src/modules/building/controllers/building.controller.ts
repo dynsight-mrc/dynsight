@@ -8,27 +8,49 @@ import {
   Patch,
   Query,
   UseGuards,
+  InternalServerErrorException,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
-import { CreateBuildingDto } from '../dtos/create-building.dto';
+import { CreateBuildingDto, CreateBuildingWithRelatedEntities } from '../dtos/create-building.dto';
 import {
   ReadBuildingDto,
   ReadBuildingWithDetailedFloorsList,
+  ReadCreatedBuildingDto,
 } from '../dtos/read-building.dto';
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
+import { Building } from '../models/building.model';
 
 @Controller('buildings')
 @UseGuards(AuthorizationGuard)
 export class BuildingController {
   constructor(private readonly buildingService: BuildingService) {}
 
-  @Post()
+  /* @Post()
   create(
     @Body() createBuildingDto: CreateBuildingDto,
   ): Promise<ReadBuildingDto> {
     return this.buildingService.create(createBuildingDto);
-  }
+  } */
+  @Post("")
+  @HttpCode(201)
+ async create(
+    @Query("organization") organization:string,
+    @Body() createBuildingDto: CreateBuildingWithRelatedEntities,
+  ): Promise<ReadCreatedBuildingDto> {
+    console.log(organization);
+    console.log(createBuildingDto);
+    
+    
+    try {
+       let buildingDetails = await this.buildingService.createBuildingWithRelatedEntites(createBuildingDto,organization);
+      return buildingDetails
+    } catch (error) {
+        throw new InternalServerErrorException(error.message)
+    }
 
+  }
   // api/buildings
   //GET BUILDINGS OVERVIEW
   @Get('overview')

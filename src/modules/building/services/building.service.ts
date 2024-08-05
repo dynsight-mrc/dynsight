@@ -6,32 +6,117 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Building, BuildingModel } from '../models/building.model';
-import { CreateBuildingDto } from '../dtos/create-building.dto';
+import {
+  CreateBuildingDto,
+  CreateBuildingWithRelatedEntities,
+} from '../dtos/create-building.dto';
 import {
   ReadBuildingDto,
   ReadBuildingOverview,
   ReadBuildingWithDetailedFloorsList,
+  ReadCreatedBuildingDto,
 } from '../dtos/read-building.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Types } from 'mongoose';
+import {
+  getConnectionToken,
+  InjectConnection,
+  InjectModel,
+  MongooseModule,
+} from '@nestjs/mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { BuildingServiceHelper } from './building-helper.service';
-import { Floor } from '@modules/floor/entities/floor.entity';
 import { FloorService } from '@modules/floor/services/floor.service';
-import { Room } from '@modules/room/models/room.model';
 import { RoomService } from '@modules/room/services/room.service';
-import { FloorModel } from '@modules/floor/models/floor.model';
 
-import { ReadRoomWithFloorId } from '@modules/room/dtos/read-room-dto';
-import { ReadFloordWithBuildingId } from '@modules/floor/dtos/read-floor.dto';
+import {
+  ReadRoomDto,
+  ReadRoomWithFloorId,
+} from '@modules/room/dtos/read-room-dto';
+import {
+  ReadFloorDto,
+  ReadFloordWithBuildingId,
+} from '@modules/floor/dtos/read-floor.dto';
+import { MongodbModule } from '@common/databaseConnections/mongodb.module';
 
 @Injectable()
 export class BuildingService {
   constructor(
+
     @InjectModel(Building.name) private readonly buildingModel: BuildingModel,
     private readonly buildingServiceHelper: BuildingServiceHelper,
     private readonly floorService: FloorService,
     private readonly roomService: RoomService,
+    @InjectConnection() private readonly connection: Connection,
+
   ) {}
+
+  async createBuildingWithRelatedEntites(
+    createBuildingDto: CreateBuildingWithRelatedEntities,
+    organization?: string,
+  ): Promise<ReadCreatedBuildingDto> {
+    let { building: _building, location, floors, blocs } = createBuildingDto;
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    let buildingDoc: Building;
+    try {
+      buildingDoc = this.buildingModel.build({
+        ..._building,
+        organizationId: new mongoose.Types.ObjectId(organization),
+        address: location,
+      });
+      await buildingDoc.save({ session });
+    } catch (error) {
+      await session.abortTransaction();
+      if (error.code === 11000) {
+        throw new Error('Immeuble existe déja avec ces paramètres');
+      }
+      throw new Error("Erreur lors de la création de l'immeuble");
+    }
+    let building: ReadBuildingDto = buildingDoc.toJSON();
+    let floorsDocs: ReadFloorDto[];
+    try {
+      floorsDocs = await this.floorService.createMany(
+        {
+          organizationId: new mongoose.Types.ObjectId(organization),
+          buildingId: new mongoose.Types.ObjectId(building.id),
+          ...floors,
+        },
+        session,
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      if (error.code === 409) {
+        throw new Error('Étage(s) existe(nt) déja avec ces paramètres');
+      }
+      throw new Error('Erreur lors de la création des étages');
+    }
+
+    let blocsDocs: ReadRoomDto[];
+    try {
+      blocsDocs = await this.roomService.createMany(
+        blocs,
+        floorsDocs,
+        buildingDoc.id,
+        new mongoose.Types.ObjectId(organization),
+        session,
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      if (error.code === 409) {
+        throw new Error('Bloc(s) existe(nt) déja avec ces paramètres');
+      }
+      throw new Error('Erreur lors de la création des blocs');
+    }
+    
+    await session.commitTransaction();
+    await session.endSession()
+   
+    return {
+      organization:new mongoose.Types.ObjectId(organization),
+      building,
+      floors: floorsDocs,
+      blocs: blocsDocs,
+    };
+  }
 
   async create(
     createBuildingDto: CreateBuildingDto,
@@ -55,6 +140,7 @@ export class BuildingService {
       );
     }
   }
+
   async findAll() {}
 
   findOne = async (
@@ -66,7 +152,6 @@ export class BuildingService {
         _id: new mongoose.Types.ObjectId(id),
       });
     } catch (error) {
-
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récuperation de l'immeuble",
       );
@@ -167,8 +252,7 @@ export class BuildingService {
         "Erreur s'est produite lors de la récupération  des données des étages",
       );
     }
-  
-    
+
     //let buildingsDocs = await this.findOne('669e2326656ca12333bad333')
     let floorsIds = floors.flat().map((floor) => floor.id);
     let rooms: ReadRoomWithFloorId[][];
@@ -178,9 +262,11 @@ export class BuildingService {
         this.roomService.findByFloorId,
       );
     } catch (error) {
-      throw new Error("Erreur s'est produite lors de la récupération  des données des blocs")
+      throw new Error(
+        "Erreur s'est produite lors de la récupération  des données des blocs",
+      );
     }
-      
+
     let floorsMapped = floors.flat().map((floor) => {
       let roomsMapped = rooms
         .flat()

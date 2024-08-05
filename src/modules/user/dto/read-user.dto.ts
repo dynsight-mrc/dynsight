@@ -99,3 +99,23 @@ export class ReadUserDto {
   @Type(() => PreferencesDto)
   preferences?: PreferencesDto|undefined;
 }
+
+
+
+export type ReadUserOverview = {
+  id:Types.ObjectId;
+firstName: string;
+lastName: string;
+email: string;
+organization: string;
+role: string;
+};
+
+
+export type ReadUserByOrganizationId = {
+  id:Types.ObjectId;
+firstName: string;
+lastName: string;
+email: string;
+role: string;
+};

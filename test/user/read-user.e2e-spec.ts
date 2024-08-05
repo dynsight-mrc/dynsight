@@ -43,30 +43,38 @@ describe('Account (e2e)', () => {
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
   });
+  beforeEach(async () => {
+    // Drop all collections before each test
+    const collections = await connection.db.collections();
+    for (let collection of collections) {
+      await collection.drop();
+    }
+  });
+  describe('/api/users/overview', () => {
+    it('/(GET) Request to get users overview list ', async () => {
+      let req = request(app.getHttpServer());
+      let createAccountResponse = await req
+        .post('/accounts')
+        .send(createAccountPayload);
+      let account: ReadAccountDto = createAccountResponse.body;
 
-  it('/(GET) Request to get users overview list ', async () => {
-    let req = request(app.getHttpServer());
-    let createAccountResponse = await req
-      .post('/accounts')
-      .send(createAccountPayload);
-    let account: ReadAccountDto = createAccountResponse.body;
-
-    await req
-      .get('/users/overview')
-      .expect(200)
-      .then((res) => {
-        let users = res.body;
-        users.map((user) => {
-          expect(user).toEqual({
-            id: expect.any(String),
-            firstName: expect.any(String),
-            lastName: expect.any(String),
-            email: expect.any(String),
-            role: expect.any(String),
-            organization: expect.any(String),
+      await req
+        .get('/users/overview')
+        .expect(200)
+        .then((res) => {
+          let users = res.body;
+          users.forEach((user) => {
+            expect(user).toEqual({
+              id: expect.any(String),
+              firstName: expect.any(String),
+              lastName: expect.any(String),
+              email: expect.any(String),
+              role: expect.any(String),
+              organization: expect.any(String),
+            });
           });
         });
-      });
+    });
   });
 
   /* it(' /(GET) Request should throw internalServerErrorException if any error occurs', async () => {
@@ -75,4 +83,30 @@ describe('Account (e2e)', () => {
       .mockRejectedValueOnce(new Error(''));
     await request(app.getHttpServer).get('/users/overview').expect(500);
   }); */
+
+  describe(' /api/users?organization', () => {
+    it('should return a list of users by organizationId', async () => {
+      let req = request(app.getHttpServer());
+      let createAccountResponse = await req
+        .post('/accounts')
+        .send(createAccountPayload);
+      let account: ReadAccountDto = createAccountResponse.body;
+
+      await req
+        .get(`/users?organization=${account.organization.id}`)
+        .expect(200)
+        .then((res) => {
+          let users = res.body;
+          users.forEach((user) => {
+            expect(user).toEqual({
+              id: expect.any(String),
+              firstName: expect.any(String),
+              lastName: expect.any(String),
+              email: expect.any(String),
+              role: expect.any(String),
+            });
+          });
+        });
+    });
+  });
 });
