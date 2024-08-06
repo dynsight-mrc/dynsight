@@ -23,7 +23,7 @@ export class AccountService {
   async create(createAccountDto: CreateAccountDto): Promise<ReadAccountDto> {
     let { organization, building, location, floors, blocs, users } =
       createAccountDto;
-
+    
     const session = await this.connection.startSession();
     session.startTransaction();
     

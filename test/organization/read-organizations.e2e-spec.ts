@@ -54,13 +54,44 @@ describe('Organization (e2e)', () => {
       await collection.drop();
     }
   });
-  describe('overview /(GET) Request to get  all organizations (overview: necessary attributes)', () => {
-    it('should return a list of organizations (with related entities)', async () => {
+  
+
+
+  describe('(GET) /organizations/:organizationId', () => {
+    it('should return an organization (with related entities)', async () => {
+      
+      //CREATE ORGANIZATION FIRST
       let createAccountResponse = await request(app.getHttpServer())
         .post('/accounts')
         .send(createAccountPayload)
+        .withCredentials();
       let account: ReadAccountDto = createAccountResponse.body;
 
+      //REQUEST TO FETCH ORGAIZATION BY ID
+      await request(app.getHttpServer())
+        .get(`/organizations/${account.organization.id}`)
+        .then((res) => {
+          let organization: ReadOrganizationWithDetailedBuildingsList =
+            res.body;
+
+          expect(organization).toBeDefined();
+          expect(organization.buildings[0].floors.length).toEqual(
+            account.floors.length,
+          );
+        });
+    });
+  });
+  describe('(GET) /organizations/overview ', () => {
+    it('should return a list of organizations (with related entities)', async () => {
+
+      //CREATE FIRST AN ORGANIZATION
+      let createAccountResponse = await request(app.getHttpServer())
+        .post('/accounts')
+        .send(createAccountPayload)
+        .withCredentials();
+      let account: ReadAccountDto = createAccountResponse.body;
+
+      //FETCH ALL ORGANIZATIONS WITH MINIMAL DETAILS (OVERVIEW)
       await request(app.getHttpServer())
         .get(`/organizations/overview`)
         .then((res) => {

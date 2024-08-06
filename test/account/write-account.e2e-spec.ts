@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {  INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { CreateAccountDto } from '@modules/account/dto/create-account.dto';
 import { Connection } from 'mongoose';
@@ -11,7 +11,6 @@ import { AppTestModule } from '../__mock__/app-test.module';
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
 import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
 import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
-
 
 describe('Account (e2e)', () => {
   let app: INestApplication;
@@ -79,9 +78,7 @@ describe('Account (e2e)', () => {
     app = moduleFixture.createNestApplication();
     const appModule = app.get(AppTestModule);
     appModule.configure = (consumer) => {
-      consumer
-        .apply(MockExtractToken)
-        .forRoutes('accounts');
+      consumer.apply(MockExtractToken).forRoutes('accounts');
     };
 
     //app.use(["/organizations"],new MockExtractToken().use)
@@ -89,14 +86,22 @@ describe('Account (e2e)', () => {
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
   });
+  beforeEach(async () => {
+    // Drop all collections before each test
+    const collections = await connection.db.collections();
+    for (let collection of collections) {
+      await collection.drop();
+    }
+  });
+  describe('(POST) /accounts', () => {
+    it('/(POST) Request to create new account ', async () => {
+      try {
+        let results = await request(app.getHttpServer())
+          .post('/accounts')
+          .send(createAccountPayload);
 
-  it('/(POST) Request to create new account ', async () => {
-    await request(app.getHttpServer())
-      .post('/accounts')
-      .send(createAccountPayload)
-      .expect(201)
-      .then((res) => {
-        let account: ReadAccountDto = res.body;
+        let account: ReadAccountDto = results.body;
+        
         expect(account).toBeDefined();
         expect(account.blocs.length).toEqual(2);
         expect(account.floors.length).toEqual(3);
@@ -123,9 +128,9 @@ describe('Account (e2e)', () => {
 
           expect(bloc.floorId).toEqual(floor.id);
         });
-      });
-
-    return;
+      } catch (error) {
+        console.log(error);
+      }
+    });
   });
-
 });

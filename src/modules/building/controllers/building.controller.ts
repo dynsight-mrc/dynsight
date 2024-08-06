@@ -39,8 +39,7 @@ export class BuildingController {
     @Query("organization") organization:string,
     @Body() createBuildingDto: CreateBuildingWithRelatedEntities,
   ): Promise<ReadCreatedBuildingDto> {
-    console.log(organization);
-    console.log(createBuildingDto);
+
     
     
     try {

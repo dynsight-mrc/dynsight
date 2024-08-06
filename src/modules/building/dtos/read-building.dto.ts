@@ -30,7 +30,7 @@ export class ReadBuildingDto {
   address: AddressDto;
 
   @IsMongoId()
-  organizationId:Types.ObjectId
+  organizationId:String
 
 }
 

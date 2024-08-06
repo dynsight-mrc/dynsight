@@ -1,20 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { CreateAccountDto } from '@modules/account/dto/create-account.dto';
 import mongoose, { Connection, Types } from 'mongoose';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { AppTestModule } from '../__mock__/app-test.module';
-import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
-import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
-import { AuthorizationGuard } from '@common/guards/authorization.guard';
 import { MockGuard } from '../__mock__/mockGuard';
 import { MockExtractToken } from '../__mock__/mockExtractTokenMiddleware';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { AppTestModule } from '../__mock__/app-test.module';
+import { AuthorizationGuard } from '@common/guards/authorization.guard';
+import { ReadAccountDto } from '@modules/account/dto/read-account.dto';
+import { createAccountPayload } from '../__mock__/MockCreateAccountPayload';
 import { CreateBuildingWithRelatedEntities } from '@modules/building/dtos/create-building.dto';
 
-jest.useFakeTimers()
-describe('Building (e2e)', () => {
+describe('Buildings (e2e)', () => {
   let app: INestApplication;
   let connection: Connection;
   let replSet: MongoMemoryReplSet;
@@ -71,6 +70,7 @@ describe('Building (e2e)', () => {
       consumer.apply(MockExtractToken).forRoutes('buildings');
     };
 
+    //app.use(["/organizations"],new MockExtractToken().use)
     await app.init();
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
@@ -82,64 +82,58 @@ describe('Building (e2e)', () => {
       await collection.drop();
     }
   });
-
-  describe('(POST) /builldings?organization', () => {
+  describe('(POST) /buildings', () => {
     it('should create a building with complete details and return all the created entities, building, floors[],rooms[]', async () => {
-      let organization = mockOrganizationId.toString()
-      request(app.getHttpServer())
+      let organization = mockOrganizationId.toString();
+      let res = await request(app.getHttpServer())
         .post(`/buildings?organization=${organization}`)
-        
-        .then((res) => {
-          let results = res.body;
-          console.log(results);
-          
-         /*  expect(results).toBeDefined();
+        .send(createBuildingWithRelatedEntites);
+      let results = res.body;
+      console.log(results);
+      
+      expect(results).toBeDefined();
 
-          expect(results.building).toBeDefined();
-          expect(results.building).toEqual({
-            id: expect.any(Types.ObjectId),
-            reference: expect.any(String),
-            name: expect.any(String),
-            constructionYear: expect.any(Number),
-            surface: expect.any(Number),
-            type: expect.any(String),
-            address: {
-              streetAddress: expect.any(String),
-              streetNumber: expect.any(String),
-              streetName: expect.any(String),
-              city: expect.any(String),
-              state: expect.any(String),
-              postalCode: expect.any(Number),
-              country: expect.any(String),
-              coordinates: {
-                lat: expect.any(Number),
-                long: expect.any(Number),
-              },
-            },
-            organizationId: expect.any(Types.ObjectId),
-          });
-          expect(results.floors).toBeDefined();
-          results.floors.forEach((floor) =>
-            expect({
-              name: expect.any(String),
-              id: expect.any(Types.ObjectId),
-              number: expect.any(Number),
-              buildingId: expect.any(Types.ObjectId),
-            }),
-          );
-          expect(results.blocs).toBeDefined();
-          results.blocs.forEach((bloc) =>
-            expect({
-              name: expect.any(String),
-              floorId: expect.any(Types.ObjectId),
-            }),
-          );
-          expect(results.organization).toBeDefined();
-          expect(results.organization).toEqual(expect.any(Types.ObjectId)); */
-        }).catch(err=>{
-          console.log(err);
-          
-        });
+      expect(results.building).toBeDefined();
+      expect(results.building).toEqual({
+        id: expect.any(String),
+        reference: expect.any(String),
+        name: expect.any(String),
+        constructionYear: expect.any(Number),
+        surface: expect.any(Number),
+        type: expect.any(String),
+        address: {
+          streetAddress: expect.any(String),
+          streetNumber: expect.any(String),
+          streetName: expect.any(String),
+          city: expect.any(String),
+          state: expect.any(String),
+          postalCode: expect.any(Number),
+          country: expect.any(String),
+          coordinates: {
+            lat: expect.any(Number),
+            long: expect.any(Number),
+          },
+        },
+        organizationId: expect.any(String),
+      });
+      expect(results.floors).toBeDefined();
+      results.floors.forEach((floor) =>
+        expect({
+          name: expect.any(String),
+          id: expect.any(String),
+          number: expect.any(Number),
+          buildingId: expect.any(String),
+        }),
+      );
+      expect(results.blocs).toBeDefined();
+      results.blocs.forEach((bloc) =>
+        expect({
+          name: expect.any(String),
+          floorId: expect.any(String),
+        }),
+      );
+      expect(results.organization).toBeDefined();
+      expect(results.organization).toEqual(expect.any(String));
     });
   });
 });

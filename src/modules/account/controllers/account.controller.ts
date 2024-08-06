@@ -26,10 +26,13 @@ export class AccountController {
   // CREATE A USER ACCOUNT (ORGANIZATION,USERS, ONE BUILDING=>FLOOS=>ROOMS) 
   @Post()
   @HttpCode(201)
-  create(
+  async create(
     @Body() createAccountDto: CreateAccountDto,
   ): Promise<ReadAccountDto> {
-    return this.accountService.create(createAccountDto);
+    let account = await this.accountService.create(createAccountDto);
+    
+    
+    return account
   }
 
   @Get()
