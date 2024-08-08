@@ -42,7 +42,19 @@ export type ReadBuildingWithDetailedFloorsList = {
   address: AddressDto;
   type: string;
   id: Types.ObjectId;
+  organization:{name:string,owner:string,id:Types.ObjectId};
   floors: ReadFloorWithDetailedRoomsList[];
+};
+export type ReadBuildingWithOrganizationDetails = {
+  id:Types.ObjectId
+  reference: string;
+  name: string;
+  constructionYear: number;
+  surface: number;
+  address: AddressDto;
+  type: string;
+  organization:{name:string,owner:string,id:Types.ObjectId};
+
 };
 
 
@@ -56,7 +68,7 @@ export type ReadBuildingOverview = {
   type: string;
   numberOfFloors: number;
   numberOfRooms:number;
-  organization:{name:string,owner:string};
+  organization:{name:string,owner:string,id:Types.ObjectId};
 
 };
 

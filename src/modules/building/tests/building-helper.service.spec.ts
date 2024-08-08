@@ -23,7 +23,7 @@ describe('Building Service Helper', () => {
     type: 'industry',
   };
   let mockBuildingOverviewDoc = {
-    toJSON:()=>({...mockBuilding,organizationId:{name:"organization",owner:"owner"}})
+    toJSON:()=>({...mockBuilding,organizationId:{name:"organization",owner:"owner",id:mockOrganizationId}})
   }
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -75,7 +75,8 @@ describe('Building Service Helper', () => {
       expect(building.organization).not.toEqual(undefined)
       expect(building.organization.name).toBeDefined()
       expect(building.organization.owner).toBeDefined()
-      expect(building.organizationId).not.toBeDefined()
+      expect(building.organization.id).toBeDefined()
+      expect(building).not.toHaveProperty('organizationId')
     })
    })
 });

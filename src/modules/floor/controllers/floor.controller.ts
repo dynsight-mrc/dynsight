@@ -8,9 +8,11 @@ import {
   Param,
   Delete,
   Patch,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { FloorService } from '../services/floor.service';
 import { CreateFloorsDto } from '../dtos/create-floors.dto';
+import { ReadFloordWithBuildingId, ReadFloorWithDetailedRoomsList } from '../dtos/read-floor.dto';
 
 @Controller('floors')
 export class FloorController {
@@ -22,19 +24,34 @@ export class FloorController {
 
   @Post()
   createMany(@Body() createFloorsDto: CreateFloorsDto): any {
-    
     return this.floorService.createMany(createFloorsDto);
   }
 
-  @Get()
+  @Get('')
+  async findByBuilding(
+    @Query('building') building: string,
+  ): Promise<ReadFloorWithDetailedRoomsList[]> {
+  
+    try {
+      let floors = await this.floorService.findByBuildingId(building);
+      return floors;
+    } catch (error) {
+      console.log(error);
+      
+      throw new InternalServerErrorException(
+        'Erreur lors de la récupération des données des étages !',
+      );
+    }
+  }
+
+  @Get("")
   findAll() {
     return this.floorService.findAll();
   }
+  
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    
-  }
+  findOne(@Param('id') id: string) {}
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: any) {

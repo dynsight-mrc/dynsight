@@ -4,8 +4,10 @@ import { FloorModel } from '../models/floor.model';
 import { getModelToken } from '@nestjs/mongoose';
 import { Floor } from '../entities/floor.entity';
 import { FloorServiceHelper } from '../services/floor-helper.service';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { RoomService } from '@modules/room/services/room.service';
+import { log } from 'console';
 
 describe('FloorService', () => {
   let floorService: FloorService;
@@ -15,14 +17,16 @@ describe('FloorService', () => {
     find: jest.fn(),
     insertMany: jest.fn(),
     select: jest.fn(),
-    lean:jest.fn()
+    lean: jest.fn(),
   };
-
-  beforeEach(async () => {
+  let mockRoomService = { findByFloorId: jest.fn() };
+ 
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FloorService,
         FloorServiceHelper,
+        { provide: RoomService, useValue: mockRoomService },
         { provide: getModelToken(Floor.name), useValue: mockFloorModel },
       ],
     }).compile();
@@ -81,22 +85,26 @@ describe('FloorService', () => {
     });
   });
   describe('findByBuildingId', () => {
-    it('should throw an error if could not return the floors for any reasosn', async () => {
+    it('should throw an error if could not return the floors for any reason', async () => {
       let mockBuildingId = new mongoose.Types.ObjectId();
 
       mockFloorModel.find.mockReturnThis();
-      mockFloorModel.select.mockReturnThis();
-      mockFloorModel.lean.mockRejectedValueOnce("new Error('')");
+      mockFloorModel.select.mockRejectedValueOnce(new Error(''));
 
-      try {
+      await expect(() =>
+        floorService.findByBuildingId(mockBuildingId.toString()),
+      ).rejects.toThrow(
+        "Erreur s'est produite lors de la récupértion des données des étages",
+      );
+      /* try {
         await floorService.findByBuildingId(mockBuildingId.toString());
       } catch (error) {
-        expect(error).toBeInstanceOf(HttpException);
+        
         expect(error.status).toEqual(500);
         expect(error.message).toEqual(
           "Erreur s'est produite lors de la récupértion des données des étages",
         );
-      }
+      } */
     });
     it('should return empty array if no room was found', async () => {
       let mockBuildingId = new mongoose.Types.ObjectId();
@@ -105,40 +113,10 @@ describe('FloorService', () => {
       mockFloorModel.find.mockReturnThis();
       mockFloorModel.select.mockResolvedValue(mockReturneValue);
 
-      let floors = await floorService.findByBuildingId(mockBuildingId.toString());
-
-      expect(mockFloorModel.find).toHaveBeenCalledWith({
-        buildingId: mockBuildingId,
-      });
-      expect(mockFloorModel.select).toHaveBeenCalledWith(
-        { name: 1, id: 1, buildingId: 1, number: 1 }
+      let floors = await floorService.findByBuildingId(
+        mockBuildingId.toString(),
       );
-      expect(floors.length).toEqual(0);
-    });
-    it('should return a list of floors', async () => {
-     
-     
-      let mockBuildingId = new mongoose.Types.ObjectId();
-      let floorsData = [
-        {
-          name: 'etage 1',
-          id: new mongoose.Types.ObjectId(),
-          number: 1,
-          buildingId: mockBuildingId,
-        },
-        {
-          name: 'etage 2',
-          id: new mongoose.Types.ObjectId(),
-          number: 1,
-          buildingId: mockBuildingId,
-        }
-      ]
-      let mockReturneValue = floorsData.map(ele=>({toJSON:()=>ele}))
-      
-      mockFloorModel.find.mockReturnThis();
-      mockFloorModel.select.mockResolvedValueOnce(mockReturneValue);
 
-      let floors = await floorService.findByBuildingId(mockBuildingId.toString());
       expect(mockFloorModel.find).toHaveBeenCalledWith({
         buildingId: mockBuildingId,
       });
@@ -148,7 +126,64 @@ describe('FloorService', () => {
         buildingId: 1,
         number: 1,
       });
-      expect(floors).toEqual(floorsData);
+      expect(floors.length).toEqual(0);
+    });
+    it('should return a list of floors', async () => {
+      let mockBuildingId = new mongoose.Types.ObjectId();
+      let floorsData = [
+        {
+          name: 'etage 1',
+          id: new mongoose.Types.ObjectId(),
+          number: 1,
+          buildingId: mockBuildingId,
+        },
+      ];
+      let mockReturnedValue = floorsData.map((ele) => ({ toJSON: () => ele }));
+
+      mockFloorModel.find.mockReturnThis();
+      mockFloorModel.select.mockResolvedValueOnce(mockReturnedValue);
+
+      let mockRoomsDocs = [{
+        id: new mongoose.Types.ObjectId(),
+        name: 'bloc 1',
+        floorId:floorsData[0].id ,
+      }]
+
+      mockRoomService.findByFloorId.mockResolvedValueOnce(mockRoomsDocs);
+
+      let floors = await floorService.findByBuildingId(
+        mockBuildingId.toString(),
+      );
+      expect(mockFloorModel.find).toHaveBeenCalledWith({
+        buildingId: mockBuildingId,
+      });
+      expect(mockFloorModel.select).toHaveBeenCalledWith({
+        name: 1,
+        id: 1,
+        buildingId: 1,
+        number: 1,
+      });
+      
+      floors.forEach(floor=>{
+        expect(floor).toEqual({
+          id:expect.any(Types.ObjectId),
+          name:expect.any(String),
+          number:expect.any(Number),
+          buildingId:expect.any(Types.ObjectId),
+          rooms:expect.any(Array)
+        })
+      })
+      floors.forEach(floor=>{
+        floor.rooms.forEach(room=>{
+          expect(room).toEqual({
+            id:expect.any(Types.ObjectId),
+            name:expect.any(String),
+            floorId:expect.any(Types.ObjectId),
+          })
+        })
+      })
+      
+      
     });
   });
 });

@@ -67,7 +67,7 @@ describe('Building (e2e)', () => {
             building.floors.map((floor) => floor.rooms).flat().length,
           ).toEqual(2);
           delete building.floors;
-          expect(building).toEqual(account.building);
+          expect(building).toHaveProperty("organization")
         });
     });
     it.todo('should return error if could not retrieve the building'

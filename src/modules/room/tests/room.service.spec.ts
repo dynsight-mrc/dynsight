@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoomServiceHelper } from '../services/room-helper.service';
 import { Room, RoomModel } from '../models/room.model';
 import { RoomService } from '../services/room.service';
-import mongoose, { Query } from 'mongoose';
+import mongoose, { Query, Types } from 'mongoose';
 import { Floor } from 'src/modules/floor/models/floor.model';
 import {
   HttpException,
@@ -68,6 +68,17 @@ describe('Blocs Service Helper', () => {
       surface: 25,
     }),
   };
+
+  let mockRoomDoc = {
+    toJSON: () => ({
+      id: mockRoomId,
+      name: 'bloc 1',
+      floorId: mockFloorId,
+      buildingId: mockBuildingId,
+      organizationId: mockOrganizationId,
+      surface: 25,
+    }),
+  };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -86,7 +97,7 @@ describe('Blocs Service Helper', () => {
     expect(roomServiceHelper).toBeDefined();
     expect(roomModel).toBeDefined();
   });
-  describe('Create Many', () => {
+  describe('createMany', () => {
     it('throw error if createRoomsData is inconveniet', async () => {
       let mockOrganizationId = new mongoose.Types.ObjectId();
       let mockBuildingId = new mongoose.Types.ObjectId();
@@ -337,6 +348,36 @@ describe('Blocs Service Helper', () => {
       expect(rooms[0].floor).not.toEqual(undefined);
       expect(rooms[0].building).not.toEqual(undefined);
       expect(rooms[0].organization).not.toEqual(undefined);
+    });
+  });
+
+  describe('finByBuildingId', () => {
+    it('should throw an error if could not fetch rooms data for any reason', async () => {
+        mockRoomModel.find.mockReturnThis()
+        mockRoomModel.select.mockRejectedValueOnce(new Error(""))
+        await expect(()=>roomService.findByBuildingId(mockBuildingId.toString())).rejects.toThrow('Erreur sest produite lors de la récupérations des données des blocs')
+    });
+    it('should return ampty list if no room is found',async()=>{
+      mockRoomModel.find.mockReturnThis()
+      mockRoomModel.select.mockResolvedValueOnce([])
+      let roomsDocs = await roomService.findByBuildingId(mockBuildingId.toString())
+      expect(roomsDocs).toBeDefined()
+      expect(roomsDocs.length).toEqual(0)
+    });
+    it('should return a list of rooms of specific bloc',async()=>{
+      mockRoomModel.find.mockReturnThis()
+      mockRoomModel.select.mockResolvedValueOnce([mockRoomDoc])
+      let roomsDocs = await roomService.findByBuildingId(mockBuildingId.toString())
+      roomsDocs.forEach(room=>{
+        expect(room).toEqual({
+          id: expect.any(Types.ObjectId),
+          name:expect.any(String),
+          floorId: expect.any(Types.ObjectId),
+          buildingId: expect.any(Types.ObjectId),
+          organizationId: expect.any(Types.ObjectId),
+          surface: expect.any(Number),
+        })
+      })
     });
   });
 });

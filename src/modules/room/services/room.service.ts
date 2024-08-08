@@ -121,6 +121,21 @@ export class RoomService {
     }
   };
 
+  findByBuildingId = async (buildingId:string):Promise<ReadRoomDto[]>=>{
+    try {
+      let rooms = await this.roomModel.find({ buildingId: new mongoose.Types.ObjectId(buildingId) }).select({
+        buildingId: 0,
+        organizationId: 0,
+      });
+
+      if (rooms.length == 0) return [];
+      return rooms.map((room) => room.toJSON());
+    } catch (error) {
+      throw new Error(
+        'Erreur sest produite lors de la récupérations des données des blocs',
+      );
+    }
+  }
   async createMany(
     createRoomsDto: CreateRoomsDto,
     floors: CreateFloorDto[],

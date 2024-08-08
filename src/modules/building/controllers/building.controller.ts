@@ -13,7 +13,10 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
-import { CreateBuildingDto, CreateBuildingWithRelatedEntities } from '../dtos/create-building.dto';
+import {
+  CreateBuildingDto,
+  CreateBuildingWithRelatedEntities,
+} from '../dtos/create-building.dto';
 import {
   ReadBuildingDto,
   ReadBuildingWithDetailedFloorsList,
@@ -33,28 +36,35 @@ export class BuildingController {
   ): Promise<ReadBuildingDto> {
     return this.buildingService.create(createBuildingDto);
   } */
-  @Post("")
+  @Post('')
   @HttpCode(201)
- async create(
-    @Query("organization") organization:string,
+  async create(
+    @Query('organization') organization: string,
     @Body() createBuildingDto: CreateBuildingWithRelatedEntities,
   ): Promise<ReadCreatedBuildingDto> {
-
-    
-    
     try {
-       let buildingDetails = await this.buildingService.createBuildingWithRelatedEntites(createBuildingDto,organization);
-      return buildingDetails
+      let buildingDetails =
+        await this.buildingService.createBuildingWithRelatedEntites(
+          createBuildingDto,
+          organization,
+        );
+      return buildingDetails;
     } catch (error) {
-        throw new InternalServerErrorException(error.message)
+      throw new InternalServerErrorException(error.message);
     }
-
   }
   // api/buildings
   //GET BUILDINGS OVERVIEW
   @Get('overview')
-  findAllOverview() {
-    return this.buildingService.findAllOverview();
+  async findAllOverview() {
+    try {
+      let buildingsOverview = await this.buildingService.findAllOverview();
+      return buildingsOverview;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "erreur s'est produite lors de la récupérations des données des immeubles",
+      );
+    }
   }
 
   //api/buildings/:id

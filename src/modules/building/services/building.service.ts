@@ -14,6 +14,7 @@ import {
   ReadBuildingDto,
   ReadBuildingOverview,
   ReadBuildingWithDetailedFloorsList,
+  ReadBuildingWithOrganizationDetails,
   ReadCreatedBuildingDto,
 } from '../dtos/read-building.dto';
 import {
@@ -40,13 +41,11 @@ import { MongodbModule } from '@common/databaseConnections/mongodb.module';
 @Injectable()
 export class BuildingService {
   constructor(
-
     @InjectModel(Building.name) private readonly buildingModel: BuildingModel,
     private readonly buildingServiceHelper: BuildingServiceHelper,
     private readonly floorService: FloorService,
     private readonly roomService: RoomService,
     @InjectConnection() private readonly connection: Connection,
-
   ) {}
 
   async createBuildingWithRelatedEntites(
@@ -106,12 +105,12 @@ export class BuildingService {
       }
       throw new Error('Erreur lors de la création des blocs');
     }
-    
+
     await session.commitTransaction();
-    await session.endSession()
-   
+    await session.endSession();
+
     return {
-      organization:new mongoose.Types.ObjectId(organization),
+      organization: new mongoose.Types.ObjectId(organization),
       building,
       floors: floorsDocs,
       blocs: blocsDocs,
@@ -146,27 +145,35 @@ export class BuildingService {
   findOne = async (
     id: string,
   ): Promise<ReadBuildingWithDetailedFloorsList | null> => {
-    let building;
+    let buildingDoc;
     try {
-      building = await this.buildingModel.findOne({
-        _id: new mongoose.Types.ObjectId(id),
-      });
+      buildingDoc = await this.buildingModel
+        .findOne({
+          _id: new mongoose.Types.ObjectId(id),
+        })
+        .populate({ path: 'organizationId', select: ['name', 'owner', 'id'] });
+    
     } catch (error) {
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récuperation de l'immeuble",
       );
     }
-    if (!building) {
+    if (!buildingDoc) {
       return null;
     }
+    
     //transform object with _id to object with id
-    building = building.toJSON() as ReadBuildingDto;
+    let building =
+      this.buildingServiceHelper.replaceBuildingOranizationIdField(buildingDoc);
+    
     //map from buildings documets => array of buildings ids
 
     //for each building id in buildingsIds, get the related floors
     let floorsDocs: ReadFloordWithBuildingId[];
     try {
-      floorsDocs = await this.floorService.findByBuildingId(building.id);
+      floorsDocs = await this.floorService.findByBuildingId(
+        building.id.toString(),
+      );
     } catch (error) {
       throw new InternalServerErrorException(
         "Erreur s'est produite lors de la récupértion des données des étages",
@@ -185,7 +192,7 @@ export class BuildingService {
       );
     } catch (error) {
       throw new InternalServerErrorException(
-        'Erreur sest produite lors de la récupérations des données des blocs',
+        'Erreur sest produite lors de la récupération des données des blocs',
       );
     }
 
@@ -194,7 +201,8 @@ export class BuildingService {
       ...floor,
       rooms: roomsDocs.flat().filter((room) => room.floorId.equals(floor.id)),
     }));
-
+    
+    
     return {
       ...building,
       floors,
@@ -226,7 +234,7 @@ export class BuildingService {
     try {
       buildingsDocs = await this.buildingModel
         .find()
-        .populate({ path: 'organizationId', select: ['owner', 'name'] });
+        .populate({ path: 'organizationId', select: ['owner', 'name', '_id'] });
     } catch (error) {
       throw new Error(
         "Erreur s'est produite lors de la récupération  des données des immeubles",
@@ -253,7 +261,6 @@ export class BuildingService {
       );
     }
 
-    //let buildingsDocs = await this.findOne('669e2326656ca12333bad333')
     let floorsIds = floors.flat().map((floor) => floor.id);
     let rooms: ReadRoomWithFloorId[][];
     try {

@@ -52,33 +52,58 @@ describe('Organization (e2e)', () => {
   });
   describe('findAllOverview /(GET) request to get all rooms overview details', () => {
     it('should return a list of all buildings with ReadRoomOverview[]', async () => {
-      let req =   request(app.getHttpServer())
+      let req = request(app.getHttpServer());
       let createAccountResponse = await req
         .post('/accounts')
         .send(createAccountPayload);
       let account: ReadAccountDto = createAccountResponse.body;
-      
-      await req.get('/rooms/overview')
-      .expect(200)
-      .then(res=>{
-        let rooms = res.body
-        console.log(rooms);
-        rooms.map(room=>{
-          expect(room).toEqual(
-            {
+
+      await req
+        .get('/rooms/overview')
+        .expect(200)
+        .then((res) => {
+          let rooms = res.body;
+          rooms.map((room) => {
+            expect(room).toEqual({
               name: expect.any(String),
               surface: expect.any(Number),
               type: expect.any(String),
               id: expect.any(String),
-              floor: { number:  expect.any(Number), name: expect.any(String), id: expect.any(String)},
-              building: { name: expect.any(String), id: expect.any(String)},
-              organization: { name: expect.any(String), id: expect.any(String) }
-            })
-        })
-       
-        
-      })
-      
+              floor: {
+                number: expect.any(Number),
+                name: expect.any(String),
+                id: expect.any(String),
+              },
+              building: { name: expect.any(String), id: expect.any(String) },
+              organization: {
+                name: expect.any(String),
+                id: expect.any(String),
+              },
+            });
+          });
+        });
+    });
+  });
+
+  describe('(GET) /rooms?building', () => {
+    it('findByBuildingId: should return a list of rooms of specific buildingId', async () => {
+      let req = request(app.getHttpServer());
+      let createAccountResponse = await req
+        .post('/accounts')
+        .send(createAccountPayload);
+      let account: ReadAccountDto = createAccountResponse.body;
+
+      let results = await req.get(`/rooms?building=${account.building.id}`);
+      let rooms = results.body;
+      rooms.forEach((room) => {
+        expect(room).toEqual({
+          id: expect.any(String),
+          name: expect.any(String),
+          floorId: expect.any(String),
+          surface: expect.any(Number),
+          type:expect.any(String)
+        });
+      });
     });
   });
 });

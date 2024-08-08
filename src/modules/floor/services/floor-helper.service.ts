@@ -35,10 +35,13 @@ export class FloorServiceHelper {
     }));
   }
   async forEachAsync(arr: any[], fn: Function) {
-    arr.reduce(
+   return  arr.reduce(
       (promise, value) => promise.then(() => fn(value)),
       Promise.resolve(),
     );
+  }
+  async mapAsync(arr:any[],fn:any):Promise<any[]>{
+    return Promise.all(arr.map(fn))
   }
   async checkIfFloorExist(name: string): Promise<Boolean> {
     try {
