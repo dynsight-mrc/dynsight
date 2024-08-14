@@ -25,16 +25,15 @@ export class CreateFloorsDto {
   number: number[];
 
   @IsMongoId()
-  organizationId:Types.ObjectId 
+  organizationId: Types.ObjectId;
 
   @IsMongoId()
-  buildingId:Types.ObjectId 
+  buildingId: Types.ObjectId;
 }
-
 
 export class CreateFloorDto {
   @IsMongoId()
-  id:Types.ObjectId
+  id: Types.ObjectId;
 
   @IsString()
   name: string;
@@ -43,8 +42,52 @@ export class CreateFloorDto {
   number: number;
 
   @IsMongoId()
-  organizationId:Types.ObjectId 
+  organizationId: Types.ObjectId;
 
   @IsMongoId()
-  buildingId:Types.ObjectId 
+  buildingId: Types.ObjectId;
+}
+
+class FloorsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsNumber({}, { each: true })
+  number: number[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  name: string[];
+}
+
+class BlocsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  name: string[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  type: string[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsNumber({}, { each: true })
+  surface: number[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  floors: string[];
+}
+
+export class CreateFloorsWithRoomsDto {
+  @ValidateNested()
+  @Type(() => FloorsDto)
+  floors: FloorsDto;
+
+  @ValidateNested()
+  @Type(() => BlocsDto)
+  blocs: BlocsDto;
 }

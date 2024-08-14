@@ -35,3 +35,28 @@ export class CreateRoomsDto{
     type? : string[]
 
 }
+export class createRoomsWithExistingFloorsDto{
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayMinSize(1)
+    @IsString({ each: true })
+    floors:string[]
+
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayMinSize(1)
+    @IsString({ each: true })
+    name:string[]
+
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayMinSize(1)
+    @IsInt({ each: true })
+    surface:number[]
+
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayMinSize(1)
+    @IsString({ each: true })
+    type:string[]
+}

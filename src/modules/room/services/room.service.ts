@@ -15,13 +15,11 @@ import {
   ReadRoomWithFloorId,
 } from '../dtos/read-room-dto';
 import { RequestValidationError } from '../../../common/errors/request-validation-error';
-import { CreateRoomsDto } from '../dtos/create-rooms.dto';
+import { CreateRoomsDto, createRoomsWithExistingFloorsDto } from '../dtos/create-rooms.dto';
 import { RoomServiceHelper } from './room-helper.service';
 import mongoose, { ObjectId, Types } from 'mongoose';
-import { Floor } from 'src/modules/floor/models/floor.model';
 import {
   CreateFloorDto,
-  CreateFloorsDto,
 } from '@modules/floor/dtos/create-floors.dto';
 
 /* import { UpdateRoomPropertiesDto } from '../dtos/update-room-property.dto';
@@ -45,45 +43,6 @@ export class RoomService {
     private readonly holdingRegisterRepositoryServcie: HoldingRegistersRepositoryService,
     private readonly inputRegisterRepositoryService: InputRegistersRepositoryService, */,
   ) {}
-
-  /*  async findAll(): Promise<ReadRoomDto[]> {
-    try {
-      return await this.roomModel
-        .find()
-        .populate({
-          path: 'devices.properties',
-          populate: {
-            path: 'equipmentId',
-          },
-        })
-        .populate({
-          path: 'devices.coils',
-          populate: {
-            path: 'modbusServer',
-          },
-        })
-        .populate({
-          path: 'devices.discreteInputs',
-          populate: {
-            path: 'modbusServer',
-          },
-        })
-        .populate({
-          path: 'devices.holdingRegisters',
-          populate: {
-            path: 'modbusServer',
-          },
-        })
-        .populate({
-          path: 'devices.inputRegisters',
-          populate: {
-            path: 'modbusServer',
-          },
-        });
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  } */
 
   async findOne(id: string) {
     try {
@@ -121,21 +80,24 @@ export class RoomService {
     }
   };
 
-  findByBuildingId = async (buildingId:string):Promise<ReadRoomDto[]>=>{
+  findByBuildingId = async (buildingId: string): Promise<ReadRoomOverview[]> => {
     try {
-      let rooms = await this.roomModel.find({ buildingId: new mongoose.Types.ObjectId(buildingId) }).select({
-        buildingId: 0,
-        organizationId: 0,
-      });
+      let rooms = await this.roomModel
+        .find({ buildingId: new mongoose.Types.ObjectId(buildingId) })
+        .select({
+          buildingId: 0,
+          organizationId: 0,
+        })
+        .populate({ path: 'floorId', select: ['id', 'name', 'number'] });
 
       if (rooms.length == 0) return [];
-      return rooms.map((room) => room.toJSON());
+      return rooms.map(this.roomServiceHelper.replaceRoomFieldsWithId);
     } catch (error) {
       throw new Error(
         'Erreur sest produite lors de la récupérations des données des blocs',
       );
     }
-  }
+  };
   async createMany(
     createRoomsDto: CreateRoomsDto,
     floors: CreateFloorDto[],
@@ -167,6 +129,13 @@ export class RoomService {
         'Erreur lors de la création des blocs',
       );
     }
+  }
+  async createManyWithExistingFloors(building:string,createRoomsWithExistingFloorsDto:createRoomsWithExistingFloorsDto){
+    //seek for floors data
+      //throw error if could not found the any prvided floor
+    //format the rooms data
+    //create rooms  
+    return Promise.resolve(true)
   }
 
   async create(createRoomDto: CreateRoomDto, session?: any) {

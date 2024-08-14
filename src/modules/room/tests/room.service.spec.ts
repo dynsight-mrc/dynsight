@@ -73,7 +73,7 @@ describe('Blocs Service Helper', () => {
     toJSON: () => ({
       id: mockRoomId,
       name: 'bloc 1',
-      floorId: mockFloorId,
+      floorId: {id:mockFloorId,name:"floor_1",number:1},
       buildingId: mockBuildingId,
       organizationId: mockOrganizationId,
       surface: 25,
@@ -272,8 +272,7 @@ describe('Blocs Service Helper', () => {
       let mockfloorId = new mongoose.Types.ObjectId();
 
       mockRoomModel.find.mockReturnThis();
-      mockRoomModel.select.mockReturnThis();
-      mockRoomModel.lean.mockRejectedValueOnce(new Error(''));
+      mockRoomModel.select.mockRejectedValueOnce(new Error(''));
 
       try {
         await roomService.findByFloorId(mockfloorId);
@@ -353,31 +352,46 @@ describe('Blocs Service Helper', () => {
 
   describe('finByBuildingId', () => {
     it('should throw an error if could not fetch rooms data for any reason', async () => {
-        mockRoomModel.find.mockReturnThis()
-        mockRoomModel.select.mockRejectedValueOnce(new Error(""))
-        await expect(()=>roomService.findByBuildingId(mockBuildingId.toString())).rejects.toThrow('Erreur sest produite lors de la récupérations des données des blocs')
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockReturnThis();
+      mockRoomModel.populate.mockRejectedValueOnce(new Error(''));
+      await expect(() =>
+        roomService.findByBuildingId(mockBuildingId.toString()),
+      ).rejects.toThrow(
+        'Erreur sest produite lors de la récupérations des données des blocs',
+      );
     });
-    it('should return ampty list if no room is found',async()=>{
-      mockRoomModel.find.mockReturnThis()
-      mockRoomModel.select.mockResolvedValueOnce([])
-      let roomsDocs = await roomService.findByBuildingId(mockBuildingId.toString())
-      expect(roomsDocs).toBeDefined()
-      expect(roomsDocs.length).toEqual(0)
+    it('should return ampty list if no room is found', async () => {
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockReturnThis();
+      mockRoomModel.populate.mockResolvedValueOnce([]);
+      let roomsDocs = await roomService.findByBuildingId(
+        mockBuildingId.toString(),
+      );
+      expect(roomsDocs).toBeDefined();
+      expect(roomsDocs.length).toEqual(0);
     });
-    it('should return a list of rooms of specific bloc',async()=>{
-      mockRoomModel.find.mockReturnThis()
-      mockRoomModel.select.mockResolvedValueOnce([mockRoomDoc])
-      let roomsDocs = await roomService.findByBuildingId(mockBuildingId.toString())
-      roomsDocs.forEach(room=>{
+    it('should return a list of rooms of specific bloc', async () => {
+      mockRoomModel.find.mockReturnThis();
+      mockRoomModel.select.mockReturnThis();
+      mockRoomModel.populate.mockResolvedValueOnce([mockRoomDoc]);
+      let roomsDocs = await roomService.findByBuildingId(
+        mockBuildingId.toString(),
+      );
+      roomsDocs.forEach((room) => {
         expect(room).toEqual({
           id: expect.any(Types.ObjectId),
-          name:expect.any(String),
-          floorId: expect.any(Types.ObjectId),
-          buildingId: expect.any(Types.ObjectId),
-          organizationId: expect.any(Types.ObjectId),
+          name: expect.any(String),
+          floor: {
+            id: expect.any(Types.ObjectId),
+            name: expect.any(String),
+            number: expect.any(Number),
+          },
+          building: expect.any(Types.ObjectId),
+          organization: expect.any(Types.ObjectId),
           surface: expect.any(Number),
-        })
-      })
+        });
+      });
     });
   });
 });

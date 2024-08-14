@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  InternalServerErrorException,
   Param,
   Patch,
   Post,
@@ -14,6 +15,7 @@ import {
 import { RoomService } from '../services/room.service';
 
 import { AuthorizationGuard } from '../../../common/guards/authorization.guard';
+import { retry } from 'rxjs';
 
 @Controller('rooms')
 @UseGuards(AuthorizationGuard)
@@ -28,6 +30,23 @@ export class RoomController {
     } catch (error) {
       throw new Error(
         "Erreur s'est produite lors de la récupération des données des blocs",
+      );
+    }
+  }
+  @Post('')
+  async createMany(
+    @Query('building') building: string,
+    @Body() createRoomsWithExistingFloorsDto: any,
+  ) {  
+    
+    try {
+      let res = await this.roomService.createManyWithExistingFloors(building,
+        createRoomsWithExistingFloorsDto,
+      );
+      return res;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Erreur lors de la creation des blocs',
       );
     }
   }

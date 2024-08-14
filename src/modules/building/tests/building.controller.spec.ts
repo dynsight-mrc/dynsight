@@ -198,4 +198,5 @@ describe('BuildingController', () => {
       expect(results.organization).toEqual(expect.any(Types.ObjectId));
     });
   });
+
 });

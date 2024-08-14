@@ -38,11 +38,8 @@ export class RoomServiceHelper {
     organizationId: Types.ObjectId,
   ): CreateRoomDtoV2[] {
     let { name, floors, type, surface } = roomsData;
-    
-    
+
     if (!this.checkAllRoomsFieldsHasSameLength(roomsData)) {
-      
-      
       throw new Error('Inadéquation des valeurs des blocs');
     }
     //CHECK IF THERE IS NO DOUBLE NAME VALUES
@@ -56,8 +53,6 @@ export class RoomServiceHelper {
         .map((ele) => floorsDocs.map((ele) => ele.name).includes(ele))
         .every((ele) => ele === true)
     ) {
-      
-      
       throw new Error("erreur lors du mappage des identifiants d'étages");
     }
 
@@ -78,16 +73,23 @@ export class RoomServiceHelper {
       Promise.resolve(),
     );
   }
-  replaceRoomFieldsWithId=(room:Room):ReadRoomOverview=>{
-    let _room = room.toJSON()
-    
-    _room.floor = _room.floorId
-    _room.building = _room.buildingId
-    _room.organization = _room.organizationId
-    delete _room.floorId
-    delete _room.buildingId
-    delete _room.organizationId
+  replaceRoomFieldsWithId = (room: Room): ReadRoomOverview => {
+    let _room = room.toJSON();
 
-    return _room as undefined as ReadRoomOverview
-  }
+    if (_room.floorId) {
+      _room.floor = _room.floorId;
+
+      delete _room.floorId;
+    }
+    if (_room.buildingId) {
+      _room.building = _room.buildingId;
+      delete _room.buildingId;
+    }
+    if (_room.organizationId) {
+      _room.organization = _room.organizationId;
+      delete _room.organizationId;
+    }
+
+    return _room as undefined as ReadRoomOverview;
+  };
 }

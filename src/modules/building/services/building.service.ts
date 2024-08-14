@@ -1,4 +1,5 @@
 import {
+  forwardRef,
   HttpException,
   HttpStatus,
   Inject,
@@ -36,18 +37,18 @@ import {
   ReadFloorDto,
   ReadFloordWithBuildingId,
 } from '@modules/floor/dtos/read-floor.dto';
-import { MongodbModule } from '@common/databaseConnections/mongodb.module';
+
 
 @Injectable()
 export class BuildingService {
   constructor(
     @InjectModel(Building.name) private readonly buildingModel: BuildingModel,
     private readonly buildingServiceHelper: BuildingServiceHelper,
-    private readonly floorService: FloorService,
     private readonly roomService: RoomService,
+    @Inject(forwardRef(()=>FloorService)) private readonly floorService:FloorService,
     @InjectConnection() private readonly connection: Connection,
   ) {}
-
+ 
   async createBuildingWithRelatedEntites(
     createBuildingDto: CreateBuildingWithRelatedEntities,
     organization?: string,

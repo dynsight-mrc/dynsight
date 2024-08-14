@@ -1,14 +1,15 @@
 import {
+  forwardRef,
   HttpException,
   HttpStatus,
   Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { CreateFloorsDto } from '../dtos/create-floors.dto';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { CreateFloorsDto, CreateFloorsWithRoomsDto } from '../dtos/create-floors.dto';
 import { FloorServiceHelper } from './floor-helper.service';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Connection, Types } from 'mongoose';
 import { Floor, FloorModel } from '../models/floor.model';
 import {
   ReadFloorDto,
@@ -17,6 +18,8 @@ import {
 } from '../dtos/read-floor.dto';
 import { RoomService } from '@modules/room/services/room.service';
 import { ReadRoomWithFloorId } from '@modules/room/dtos/read-room-dto';
+import { BuildingService } from '@modules/building/services/building.service';
+
 
 @Injectable()
 export class FloorService {
@@ -24,7 +27,11 @@ export class FloorService {
     @InjectModel(Floor.name) private readonly floorModel: FloorModel,
     private readonly floorServiceHelper: FloorServiceHelper,
     private readonly roomService: RoomService,
+    @Inject(forwardRef(()=>BuildingService)) private readonly buildingService:BuildingService,
+    @InjectConnection() private connection: Connection,
   ) {}
+
+  
 
   async create() {}
 
@@ -53,8 +60,60 @@ export class FloorService {
       );
     }
   }
-  async findAll() {
-    return 'ok';
+  async createManyWithRooms(
+    building:string,
+    createFloorsWithRoomsDto: CreateFloorsWithRoomsDto,
+  ): Promise<any> {
+    let { floors, blocs:rooms } = createFloorsWithRoomsDto;
+    
+    let {id:buildingId,organization:{id:organizationId}} = await this.buildingService.findOne(building)
+    
+    const session = await this.connection.startSession();
+
+    session.startTransaction();
+
+    let floorsFormatedData =
+      this.floorServiceHelper.formatFloorsRawData({...floors,buildingId,organizationId});
+    
+      let floorsDocs;
+    
+    try {
+      floorsDocs = await this.floorModel.insertMany(floorsFormatedData, {
+        session,
+      });
+      
+      floorsDocs as undefined as ReadFloorDto[];
+    } catch (error) {
+  
+      
+      
+      await session.abortTransaction();
+
+      if (error.code === 11000) {
+        throw new Error(
+          'Un ou plusieurs étages existent déja avec ces paramètres',
+        );
+      }
+      throw new Error('Erreur lors de la création des étages');
+    }
+    let roomsDocs;
+    try {
+      roomsDocs = await this.roomService.createMany(
+        rooms,
+        floorsDocs,
+        buildingId,
+        organizationId,
+      );
+      
+    } catch (error) {
+      await session.abortTransaction();
+      throw new Error('Erreur lors de la création les blocs des étages');
+    }
+    await session.commitTransaction();
+
+    await session.endSession();
+    
+    return { floors: floorsDocs, rooms: roomsDocs };
   }
   async findOneByName(name: string): Promise<Boolean> {
     try {
@@ -90,13 +149,14 @@ export class FloorService {
     ) as undefined as ReadFloordWithBuildingId[];
     let floorsIds = floors.map((floor) => floor.id);
 
-
-    let rooms:ReadRoomWithFloorId[][] = await this.floorServiceHelper.mapAsync(
+    let rooms: ReadRoomWithFloorId[][] = await this.floorServiceHelper.mapAsync(
       floorsIds,
       this.roomService.findByFloorId,
     );
     let floorsDetails = floors.map((floor) => {
-      let roomsFiltered = rooms.flat().filter((room) => room.floorId.equals(floor.id));
+      let roomsFiltered = rooms
+        .flat()
+        .filter((room) => room.floorId.equals(floor.id));
       return {
         ...floor,
         rooms: roomsFiltered,
