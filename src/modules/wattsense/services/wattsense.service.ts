@@ -80,7 +80,7 @@ export class WattsenseService {
           devices.map((device) => device.deviceId),
         );
     } catch (error) {
-      throw new Error('Error while retrieving devices data');
+      throw new Error('Error occured while retrieving devices data');
     }
 
     try {

@@ -30,7 +30,25 @@ export class CreateFloorsDto {
   @IsMongoId()
   buildingId: Types.ObjectId;
 }
+export class CreateFloorsAttrsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  name: string[];
 
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMinSize(1)
+  @IsInt({ each: true })
+  number: number[];
+
+  @IsString()
+  organizationId: string;
+
+  @IsString()
+  buildingId: string;
+}
 export class CreateFloorDto {
   @IsMongoId()
   id: Types.ObjectId;
@@ -47,7 +65,20 @@ export class CreateFloorDto {
   @IsMongoId()
   buildingId: Types.ObjectId;
 }
+export class CreateFloorAttrsDto {
 
+  @IsString()
+  name: string;
+
+  @IsString()
+  number: number;
+
+  @IsMongoId()
+  organizationId: Types.ObjectId;
+
+  @IsMongoId()
+  buildingId:Types.ObjectId;
+}
 class FloorsDto {
   @IsArray()
   @ArrayNotEmpty()

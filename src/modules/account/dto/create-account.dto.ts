@@ -1,14 +1,41 @@
-import { UserRole } from '@modules/user/dto/user.dto';
-import { Type } from 'class-transformer';
+import { AddressDto } from '@modules/shared/dto/address/read-address.dto';
 import {
-  IsString,
-  IsNumber,
-  IsArray,
-  ValidateNested,
-  ArrayNotEmpty,
-  ArrayMinSize,
-  IsInt,
-} from 'class-validator';
+  CreateBuildingAttrsWithoutLocationDto,
+  CreateBuildingDocumentAttrsDto,
+} from '@modules/shared/dto/building/create-building.dto';
+import { CreateFloorsNamesAndNumbersAttrsDto } from '@modules/shared/dto/floor/create-floor.dto';
+import { CreateOrganizationDocumentAttrsDto } from '@modules/shared/dto/organization/create-organization.dto';
+import { CreateRoomsAttrsDto } from '@modules/shared/dto/room/create-rooms.dto';
+import { CreateUsersAttrsDto } from '@modules/shared/dto/user/create-user.dto';
+import { UserRole } from '@modules/shared/types/user.type';
+import { Type } from 'class-transformer';
+import { ArrayMinSize, ArrayNotEmpty, IsArray, IsInt, IsNumber, IsString, ValidateNested } from 'class-validator';
+
+/* export class CreateAccounAttrstDto {
+  @ValidateNested()
+  @Type(() => CreateBuildingAttrsWithoutLocationDto)
+  building: CreateBuildingAttrsWithoutLocationDto;
+
+  @ValidateNested()
+  @Type(() => CreateFloorsNamesAndNumbersAttrsDto)
+  floors: CreateFloorsNamesAndNumbersAttrsDto;
+
+  @ValidateNested()
+  @Type(() => AddressDto)
+  location: AddressDto;
+
+  @ValidateNested()
+  @Type(() => CreateRoomsAttrsDto)
+  blocs: CreateRoomsAttrsDto;
+
+  @ValidateNested()
+  @Type(() => CreateOrganizationDocumentAttrsDto)
+  organization: CreateOrganizationDocumentAttrsDto;
+
+  @ValidateNested()
+  @Type(() => CreateUsersAttrsDto)
+  users: CreateUsersAttrsDto;
+} */
 
 class CoordinatesDto {
   @IsNumber()
@@ -18,7 +45,7 @@ class CoordinatesDto {
   long: number;
 }
 
-export class BuildingDto {
+export class CreateAccountBuildingAttrsDto {
   @IsString()
   reference: string;
 
@@ -35,7 +62,7 @@ export class BuildingDto {
   type: string;
 }
 
-class FloorsDto {
+class CreateAccountFloorsAttrsDto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
@@ -69,7 +96,7 @@ class LocationDto {
   coordinates: CoordinatesDto;
 }
 
-class BlocsDto {
+class CreateAccountRoomsAttrsDto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
@@ -86,16 +113,16 @@ class BlocsDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
-  surface?: number[];
+  surface: number[];
 
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  type?: string[];
+  type: string[];
 }
 
-class OrganizationDto {
+class CreateAccountOrganizationAttrsDto {
   @IsString()
   reference: string;
 
@@ -109,7 +136,7 @@ class OrganizationDto {
   owner: string;
 }
 
-class UserDto {
+class CreateAccountUsersAttrsADto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
@@ -138,31 +165,31 @@ class UserDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  role: UserRole[];
+  role: (UserRole|string)[];
 }
 
-export class CreateAccountDto {
+export class CreateAccountAttrsDto {
   @ValidateNested()
-  @Type(() => BuildingDto)
-  building: BuildingDto;
+  @Type(() => CreateAccountBuildingAttrsDto)
+  building: CreateAccountBuildingAttrsDto;
 
   @ValidateNested()
-  @Type(() => FloorsDto)
-  floors: FloorsDto;
+  @Type(() => CreateAccountFloorsAttrsDto)
+  floors: CreateAccountFloorsAttrsDto;
 
   @ValidateNested()
   @Type(() => LocationDto)
   location: LocationDto;
 
   @ValidateNested()
-  @Type(() => BlocsDto)
-  blocs: BlocsDto;
+  @Type(() => CreateAccountRoomsAttrsDto)
+  blocs: CreateAccountRoomsAttrsDto;
 
   @ValidateNested()
-  @Type(() => OrganizationDto)
-  organization: OrganizationDto;
+  @Type(() => CreateAccountOrganizationAttrsDto)
+  organization: CreateAccountOrganizationAttrsDto;
 
   @ValidateNested()
-  @Type(() => UserDto)
-  users: UserDto;
+  @Type(() => CreateAccountUsersAttrsADto)
+  users: CreateAccountUsersAttrsADto;
 }

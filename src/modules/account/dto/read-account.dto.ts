@@ -1,18 +1,15 @@
-import { CreateBuildingDto } from '@modules/building/dtos/create-building.dto';
-import { CreateFloorDto } from '@modules/floor/dtos/create-floor.dto';
-import { CreateRoomDto } from '@modules/room/dtos/create-room.dto';
-import { CreateUserDto } from '@modules/user/dto/create-user.dto';
-import { CreateOrganizationDto } from '@modules/organization/dtos/create-organization.dto';
-import { ReadOrganizationDto } from '@modules/organization/dtos/read-organization.dto';
-import { ReadBuildingDto } from '@modules/building/dtos/read-building.dto';
-import { ReadFloorDto } from '@modules/floor/dtos/read-floor.dto';
-import { ReadRoomDto } from '@modules/room/dtos/read-room-dto';
-import { ReadUserDto } from '@modules/user/dto/read-user.dto';
+import { ReadBuildingDocumentDto } from "@modules/building/dtos/read-buildings.dto";
+import { ReadFloorDocumentDto } from "@modules/shared/dto/floor/read-floor.dto";
+import { ReadOrganizationDocumentDto } from "@modules/shared/dto/organization/read-organization.dto";
+import { ReadRoomDocumentDto } from "@modules/shared/dto/room/read-rooms.dto";
+import { ReadUserDocumentDto } from "@modules/shared/dto/user/read-user.dto";
+
+
 
 export type ReadAccountDto = {
-    organization: ReadOrganizationDto;
-    building: ReadBuildingDto;
-    floors: ReadFloorDto[];
-    blocs: ReadRoomDto[];
-    users: ReadUserDto[];
+    organization: ReadOrganizationDocumentDto;
+    building: ReadBuildingDocumentDto;
+    floors: ReadFloorDocumentDto[];
+    rooms: ReadRoomDocumentDto[];
+    users: ReadUserDocumentDto[];
   };

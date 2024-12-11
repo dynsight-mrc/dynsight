@@ -7,22 +7,25 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { UserAuthCredentials } from '../dtos/user-auth-credentials.dto';
+import { UserAuthCredentials, UserSingedinDto } from '../dtos/user-authentication.dto';
 import * as jwt from 'jsonwebtoken';
 import { AuthenticationService } from '../services/authentication.service';
 import { PasswordServiceHelper } from '../services/password-helper.service';
-import { AuthenticatedUserDto } from '../dtos/authenticated-user.dto';
-import { CreateUserDto } from '@modules/user/dto/create-user.dto';
+import { CreateUserDocumentAttrsDto } from '@modules/shared/dto/user/create-user.dto';
+import { UserSharedService } from '@modules/shared/services/user.shared.service';
 
 @Controller('auth')
 export class AuthenticationController {
   constructor(
     private readonly authenticationService: AuthenticationService,
+    private readonly userSharedService:UserSharedService,
     private readonly passwordServiceHelper: PasswordServiceHelper,
   ) {}
 
-  /* @Post('signin')
-  signin(@Body() userAuthCredentials: UserAuthCredentials) {
+  @Post('signin')
+  /* signin(@Body() userAuthCredentials: UserAuthCredentials) {
+    console.log(userAuthCredentials);
+    
     if (userAuthCredentials.username === 'admin@dynsight.fr') {
       let user = {
         personalInformation: {
@@ -88,13 +91,19 @@ export class AuthenticationController {
 
     //return null
   } */
-  @Post('signin')
-  async signin(@Body() userAuthCredentials: UserAuthCredentials): Promise<AuthenticatedUserDto> {
-    let user = await this.authenticationService.findOne(
-      userAuthCredentials.username,
-    );
+  
+  
+  
+    @Post('signin')
+  async signin(@Body() userAuthCredentials: UserAuthCredentials): Promise<UserSingedinDto> {
+    
+    let users = await this.userSharedService.findMany({
+      'authentication.username': userAuthCredentials.username,
+    });
 
-    if (!user) {
+    
+    
+    if (users.length===0) {
       throw new HttpException(
         'Utilisateur non trouvé',
         HttpStatus.UNAUTHORIZED,
@@ -102,21 +111,27 @@ export class AuthenticationController {
     }
     let checkPasswordHash = await this.passwordServiceHelper.checkPasswordHash(
       userAuthCredentials.password,
-      user.authentication.password,
+      users[0].authentication.password,
     );
-
+    
+    
     if (!checkPasswordHash) {
       throw new HttpException('Mauvais mot de passe', HttpStatus.UNAUTHORIZED);
     }
 
-    return { token: jwt.sign(user, process.env.JWTSECRET), ...user };
+    return { token: jwt.sign(users[0], process.env.JWTSECRET), ...users[0] };
 
     //return null
   }
 
   @Post('signup')
-  async signup(@Body() createUserDto:CreateUserDto) {
-    let user = await this.authenticationService.createOne(createUserDto);
-    return user
+  async signup(@Body() createUserDto:CreateUserDocumentAttrsDto) {
+    try {
+      let user = await this.authenticationService.createOne(createUserDto);
+      return user
+
+    } catch (error) {
+      throw new HttpException("Erreur lors de la création du compte",HttpStatus.INTERNAL_SERVER_ERROR)
+    }
   }
 }

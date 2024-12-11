@@ -1,6 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BuildingService } from '../services/building.service';
-import { BuildingServiceHelper } from '../services/building-helper.service';
 import { Building, BuildingModel } from '../models/building.model';
 import {
   getConnectionToken,
@@ -11,183 +9,217 @@ import { HttpException, InternalServerErrorException } from '@nestjs/common';
 import mongoose, { Connection, mongo, startSession, Types } from 'mongoose';
 import { RoomService } from '@modules/room/services/room.service';
 import { FloorService } from '@modules/floor/services/floor.service';
+
+import { MongoSharedService } from '@modules/shared/services/mongo.shared.service';
+import { RoomSharedService } from '@modules/shared/services/room.shared.service';
+import { FloorSharedService } from '@modules/shared/services/floor.shared.service';
+import { BuildingSharedService } from '@modules/shared/services/building.shared.service';
+import { BuildingService } from '../services/building.service';
+import { mockBuildingModel } from './__mocks__/building.model.mock';
 import {
-  CreateBuildingDto,
-  CreateBuildingWithRelatedEntities,
-} from '../dtos/create-building.dto';
+  mockBuildingSharedService,
+  mockFloorSharedService,
+  mockRoomSharedService,
+} from './__mocks__/building.services.mock';
+import {
+  createBuildingDto,
+  createBuildingWithDetails,
+  createRoomDocumentAttrsDto,
+  mockBuildingDoc,
+  mockBuildingDocWithFloorsDetails,
+  mockBuildingId,
+  mockConnection,
+  mockFloorsDocs,
+  mockOrganizationId,
+  mockRoomsDocs,
+} from './__mocks__/building.docs.mock';
+import { mockCreateFloorDocumentDto } from '@modules/shared/test/__mocks__/floors/floor.docs.mock';
 
 describe('BuildingService', () => {
+  let buildingModel: BuildingModel;
   let buildingService: BuildingService;
-  let buildngServiceHelper: BuildingServiceHelper;
-  let mockConnection = {
-    startSession: jest.fn().mockResolvedValue({
-      startTransaction: jest.fn(),
-      abortTransaction: jest.fn(),
-      commitTransaction: jest.fn(),
-      endSession: jest.fn(),
-    }),
-  };
-  let mockFloorService = {
-    findByBuildingId: jest.fn(),
-    createMany: jest.fn(),
-  };
-  let mockRoomService = {
-    findByFloorId: jest.fn(),
-    createMany: jest.fn(),
-  };
-  let mockBuildingId = new mongoose.Types.ObjectId();
-  let mockOrganizationId = new mongoose.Types.ObjectId().toString();
-
-  let mockBuilding = {
-    id: mockBuildingId,
-    organizationId: new mongoose.Types.ObjectId('668e6e2ddb4c17164be2d6a1'),
-    reference: 'string',
-    name: 'string',
-    constructionYear: 2012,
-    surface: 290,
-    address: {
-      streetAddress: '123 Main St',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-    type: 'industry',
-    save: jest.fn().mockResolvedValue(true),
-  };
-  let mockBuildingPopulatedOrganization = {
-    id: mockBuildingId,
-    organizationId: {
-      id: mockOrganizationId,
-      name: 'organizaion',
-      owner: 'owner',
-    },
-    reference: 'string',
-    name: 'string',
-    constructionYear: 2012,
-    surface: 290,
-    address: {
-      streetAddress: '123 Main St',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-    type: 'industry',
-  };
-  let createBuildingWithRelatedEntites: CreateBuildingWithRelatedEntities = {
-    building: {
-      reference: 'building mine pro',
-      name: 'building mine pro',
-      constructionYear: 2003,
-      surface: 250,
-      type: 'commercial',
-    },
-    floors: {
-      name: ['etage 1', 'etage 2', 'etage 3'],
-      number: [1, 2, 3],
-    },
-    blocs: {
-      name: ['bloc 1', 'bloc 2'],
-      type: ['office', 'storage'],
-      surface: [200, 400],
-      floors: ['etage 1', 'etage 3'],
-    },
-    location: {
-      streetAddress: '123 MINE LOCATION',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-  };
-  const mockFloorsDocs = [
-    {
-      name: 'etage 1',
-      id: new mongoose.Types.ObjectId(),
-      number: 1,
-      buildingId: mockBuildingId,
-    },
-  ];
-
-  let mockRoomsDocs = [
-    { name: 'bloc 1', floorId: mockFloorsDocs[0].id },
-    { name: 'bloc 2', floorId: mockFloorsDocs[0].id },
-  ];
-  let mockBuildingModel = {
-    findOne: jest.fn(),
-    build: jest.fn(),
-    find: jest.fn(),
-    select: jest.fn(),
-    lean: jest.fn(),
-    populate: jest.fn(),
-  };
-
-  let mockBuildingDoc = {
-    id: mockBuildingId,
-    reference: 'string',
-    name: 'string',
-    constructionYear: 2012,
-    surface: 290,
-    coordinates: {
-      lat: 123,
-      long: 123,
-    },
-    type: 'industry',
-    organizationId: { name: 'organization', owner: 'owner' },
-  };
-  let mockBuildingOverview = {
-    toJSON: () => ({ ...mockBuildingDoc }),
-  };
-
+  let buildingSharedService: BuildingSharedService;
+  let floorSharedService: FloorSharedService;
+  let roomSharedService: RoomSharedService;
+  let mongoSharedService: MongoSharedService;
+  
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        BuildingService,
-        BuildingServiceHelper,
         {
           provide: getModelToken(Building.name),
           useValue: mockBuildingModel,
         },
-        { provide: RoomService, useValue: mockRoomService },
-        { provide: FloorService, useValue: mockFloorService },
+        BuildingService,
+
+        { provide: RoomSharedService, useValue: mockRoomSharedService },
+        { provide: FloorSharedService, useValue: mockFloorSharedService },
+        { provide: BuildingSharedService, useValue: mockBuildingSharedService },
         {
           provide: getConnectionToken('Database'),
-          useValue: mockConnection,
+          useValue: {
+            startSession: jest.fn().mockResolvedValue(mockConnection),
+          },
         },
+        MongoSharedService,
       ],
     }).compile();
 
     buildingService = module.get<BuildingService>(BuildingService);
-    buildngServiceHelper = module.get<BuildingServiceHelper>(
-      BuildingServiceHelper,
+    buildingSharedService = module.get<BuildingSharedService>(
+      BuildingSharedService,
     );
-    //buildingModel = module.get<BuildingModel>(getModelToken(Building.name));
+    roomSharedService = module.get<RoomSharedService>(RoomSharedService);
+    floorSharedService = module.get<FloorSharedService>(FloorSharedService);
+    mongoSharedService = module.get<MongoSharedService>(MongoSharedService);
+    buildingModel = module.get<BuildingModel>(getModelToken(Building.name));
   });
 
   it('should be defined', () => {
     expect(buildingService).toBeDefined();
-    expect(buildngServiceHelper).toBeDefined();
   });
 
+  
+  describe('createOneWithFloorsDetails', () => {
+    it('should throw an error if a building with the same name exists', async () => {
+      mockBuildingSharedService.createOne.mockRejectedValueOnce({
+        code: 11000,
+      });
+
+      try {
+        await buildingService.createOneWithFloorsDetails(
+          createBuildingWithDetails,
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(mockConnection.abortTransaction).toHaveBeenCalled();
+        expect(error.message).toBe('Building already exists with this details');
+      }
+    });
+    it('should throw an error if could not create the building for any other reason', async () => {
+      mockBuildingSharedService.createOne.mockRejectedValueOnce(Error(''));
+      try {
+        await buildingService.createOneWithFloorsDetails(
+          createBuildingWithDetails,
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(mockConnection.abortTransaction).toHaveBeenCalled();
+        expect(error.message).toBe('Error occured while creating building');
+      }
+    });
+    it('should throw error and abort building creation if could not create the corresponding floors', async () => {
+      mockBuildingSharedService.createOne.mockResolvedValueOnce(
+        mockBuildingDoc,
+      );
+      mockFloorSharedService.formatFloorsRawData.mockReturnValueOnce([
+        mockCreateFloorDocumentDto,
+      ]);
+      mockFloorSharedService.createMany.mockRejectedValueOnce(Error(''));
+      try {
+        await buildingService.createOneWithFloorsDetails(
+          createBuildingWithDetails,
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(mockConnection.abortTransaction).toHaveBeenCalled();
+        expect(error.message).toBe(
+          'Error occured while creating building floors',
+        );
+      }
+    });
+    it('should throw error and abort building creation if could not create the corresponding rooms', async () => {
+      mockBuildingSharedService.createOne.mockResolvedValueOnce(
+        mockBuildingDoc,
+      );
+      mockFloorSharedService.formatFloorsRawData.mockReturnValueOnce([
+        mockCreateFloorDocumentDto,
+      ]);
+      mockFloorSharedService.createMany.mockResolvedValueOnce([
+        mockFloorsDocs[0],
+      ]);
+      mockRoomSharedService.formatRoomsRawData([createRoomDocumentAttrsDto]);
+      mockRoomSharedService.createMany.mockRejectedValueOnce(Error(''));
+      try {
+        await buildingService.createOneWithFloorsDetails(
+          createBuildingWithDetails,
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(mockConnection.abortTransaction).toHaveBeenCalled();
+        expect(error.message).toBe(
+          'Error occured while creating building rooms',
+        );
+      }
+    });
+    it('should creating the building and the corresponding floors and rooms and return the the building object with details', async () => {
+      mockBuildingSharedService.createOne.mockResolvedValueOnce(
+        mockBuildingDoc,
+      );
+      mockFloorSharedService.formatFloorsRawData.mockReturnValueOnce([
+        mockCreateFloorDocumentDto,
+      ]);
+      mockFloorSharedService.createMany.mockResolvedValueOnce([
+        mockFloorsDocs[0],
+      ]);
+      mockRoomSharedService.formatRoomsRawData([createRoomDocumentAttrsDto]);
+      mockRoomSharedService.createMany.mockResolvedValueOnce([
+        mockRoomsDocs[0],
+      ]);
+      mockBuildingSharedService.findOneWithFloorsDetails.mockResolvedValueOnce(
+        mockBuildingDocWithFloorsDetails,
+      );
+
+      let results = await buildingService.createOneWithFloorsDetails(
+        createBuildingWithDetails,
+        mockOrganizationId.toString(),
+      );
+      expect(mockConnection.commitTransaction).toHaveBeenCalled();
+      expect(results).toEqual({
+        id: expect.any(Types.ObjectId),
+        reference: expect.any(String),
+        name: expect.any(String),
+        constructionYear: expect.any(Number),
+        surface: expect.any(Number),
+        type: expect.any(String),
+        address: {
+          streetAddress: expect.any(String),
+          streetNumber: expect.any(String),
+          streetName: expect.any(String),
+          city: expect.any(String),
+          state: expect.any(String),
+          postalCode: expect.any(Number),
+          country: expect.any(String),
+          coordinates: {
+            lat: expect.any(Number),
+            long: expect.any(Number),
+          },
+        },
+        organization: {
+          id: expect.any(Types.ObjectId),
+          name: expect.any(String),
+          owner: expect.any(String),
+          reference:expect.any(String),
+          description:expect.any(String)
+        },
+        floors: expect.anything(),
+      });
+      results.floors.forEach((floor) =>
+        expect(floor).toEqual({
+          name: expect.any(String),
+          id: expect.any(Types.ObjectId),
+          number: expect.any(Number),
+          building: expect.anything(),
+
+          organization: expect.anything(),
+
+          rooms: expect.anything(),
+        }),
+      );
+    });
+  });
+
+  /*
   describe('Create', () => {
     it('should throw an error if a building with the same name exists', async () => {
       jest
@@ -264,7 +296,7 @@ describe('BuildingService', () => {
     });
   });
 
-  describe('findByOrganizationId', () => {
+   describe('findByOrganizationId', () => {
     it('should throw an error if could not return the buildings for any reason', async () => {
       let mockOrganizationId = new mongoose.Types.ObjectId();
 
@@ -372,9 +404,7 @@ describe('BuildingService', () => {
         toJSON: () => ({...mockBuildingPopulatedOrganization}),
       });
 
-    /*   mockBuildingModel.populate.mockResolvedValueOnce({
-        toJSON: () => mockBuildingPopulatedOrganization,
-      }); */
+   
       mockFloorService.findByBuildingId.mockRejectedValueOnce(new Error(''));
       try {
         await buildingService.findOne(mockBuildingId.toString());
@@ -623,14 +653,5 @@ describe('BuildingService', () => {
       expect(results.organization).toBeDefined();
       expect(results.organization).toEqual(expect.any(Types.ObjectId));
     });
-  });
-
-
- 
-
-  afterEach(() => {
-    mockFloorService.findByBuildingId.mockReset();
-    mockBuildingModel.findOne.mockReset()
-    mockBuildingModel.populate.mockReset()
-  });
+  }); */
 });

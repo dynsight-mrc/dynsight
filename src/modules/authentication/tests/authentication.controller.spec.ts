@@ -4,16 +4,26 @@ import { AuthenticationService } from '../services/authentication.service';
 import { PasswordServiceHelper } from '../services/password-helper.service';
 import { HttpException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { UserSharedService } from '@modules/shared/services/user.shared.service';
+import { Gender } from '@modules/shared/types/user.type';
+import { UserRole } from '@modules/user/dto/enums/user-role.enum';
 
 describe('Authentication Signin ', () => {
   let authenticationController: AuthenticationController;
   let authenticationService: AuthenticationService;
   let passwordServiceHelper: PasswordServiceHelper;
+  let userSharedService: UserSharedService;
+
+  let mockUserSharedService = {
+    findMany: jest.fn(),
+  };
   let mockAuthenticationSerice = {
     findOne: jest.fn(),
+    createOne: jest.fn(),
   };
   let mockPasswordServiceHelper = {
     checkPasswordHash: jest.fn(),
+    createPasswordHash: jest.fn(),
   };
   let mockUserCredentials = {
     username: 'test@test.com',
@@ -40,11 +50,30 @@ describe('Authentication Signin ', () => {
       password: 'test@test.com',
     },
   };
+
+  const mockCreateUserDto = {
+    personalInformation: {
+      lastName: 'admin',
+      firstName: 'admin',
+      gender: Gender.MALE,
+    },
+    contactInformation: {
+      email: 'admin@dynsight.fr',
+    },
+    authentication: {
+      username: 'admin@dynsight.fr',
+      password: 'admin@dynsight.fr',
+    },
+    permissions: {
+      role: "admin",
+    },
+  };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthenticationController],
       providers: [
         { provide: AuthenticationService, useValue: mockAuthenticationSerice },
+        { provide: UserSharedService, useValue: mockUserSharedService },
         { provide: PasswordServiceHelper, useValue: mockPasswordServiceHelper },
       ],
     }).compile();
@@ -57,6 +86,7 @@ describe('Authentication Signin ', () => {
     passwordServiceHelper = module.get<PasswordServiceHelper>(
       PasswordServiceHelper,
     );
+    userSharedService = module.get<UserSharedService>(UserSharedService);
   });
   it('should be defined', () => {
     expect(authenticationController).toBeDefined();
@@ -64,7 +94,7 @@ describe('Authentication Signin ', () => {
 
   describe('Signin', () => {
     it('should throw error if the user not exists', async () => {
-      mockAuthenticationSerice.findOne.mockResolvedValueOnce(null);
+      mockUserSharedService.findMany.mockResolvedValueOnce([]);
       try {
         await authenticationController.signin(mockUserCredentials);
       } catch (error) {
@@ -72,13 +102,10 @@ describe('Authentication Signin ', () => {
         expect(error.status).toEqual(401);
         expect(error.message).toEqual('Utilisateur non trouvé');
       }
-
-      expect(authenticationService.findOne).toHaveBeenCalledWith(
-        mockUserCredentials.password,
-      );
     });
+
     it('should throw error if the password is invalid', async () => {
-      mockAuthenticationSerice.findOne.mockResolvedValueOnce(mockReturnedUser);
+      mockUserSharedService.findMany.mockResolvedValueOnce([mockReturnedUser]);
 
       let spyCheckPasswordHash = jest
         .spyOn(mockPasswordServiceHelper, 'checkPasswordHash')
@@ -87,34 +114,35 @@ describe('Authentication Signin ', () => {
       try {
         await authenticationController.signin(mockUserCredentials);
       } catch (error) {
+        expect(userSharedService.findMany).toHaveBeenCalledWith({
+          'authentication.username': mockUserCredentials.username,
+        });
+        expect(spyCheckPasswordHash).toHaveBeenCalledWith(
+          mockUserCredentials.password,
+          mockReturnedUser.authentication.password,
+        );
+
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toEqual(401);
         expect(error.message).toEqual('Mauvais mot de passe');
       }
-
-      expect(authenticationService.findOne).toHaveBeenCalledWith(
-        mockUserCredentials.username,
-      );
-      expect(spyCheckPasswordHash).toHaveBeenCalledWith(
-        mockUserCredentials.password,
-        mockReturnedUser.authentication.password,
-      );
     });
+
     it('should return a valid object with token and user data', async () => {
-      mockAuthenticationSerice.findOne.mockResolvedValueOnce(mockReturnedUser);
+      mockUserSharedService.findMany.mockResolvedValueOnce([mockReturnedUser]);
 
       let spyCheckPasswordHash = jest
         .spyOn(mockPasswordServiceHelper, 'checkPasswordHash')
         .mockResolvedValueOnce(true);
+
       let mockedToken = 'signed-jwt-token';
 
-      let spyJWTSign = jest.spyOn(jwt,"sign").mockImplementationOnce(()=>mockedToken);
+      let spyJWTSign = jest
+        .spyOn(jwt, 'sign')
+        .mockImplementationOnce(() => mockedToken);
 
       let user = await authenticationController.signin(mockUserCredentials);
 
-      expect(authenticationService.findOne).toHaveBeenCalledWith(
-        mockUserCredentials.username,
-      );
       expect(spyCheckPasswordHash).toHaveBeenCalledWith(
         mockUserCredentials.password,
         mockReturnedUser.authentication.password,
@@ -123,6 +151,18 @@ describe('Authentication Signin ', () => {
       expect(user.token).toBeDefined();
 
       spyJWTSign.mockRestore;
+    });
+  });
+
+  describe('Signin', () => {
+    it('should thorw an error if could not create a user', async () => {
+      mockAuthenticationSerice.createOne.mockRejectedValue(Error);
+      try {
+        await authenticationController.signup(mockCreateUserDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException)
+        expect(error.message).toEqual("Erreur lors de la création du compte")
+      }
     });
   });
 });

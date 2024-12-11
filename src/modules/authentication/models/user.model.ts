@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Model } from 'mongoose';
-import * as UserDtos from '../dtos/user.dto'
+import * as UserTypes from '../../shared/types/user.type'
 
 type UserAttrs = {
-  personalInformation: UserDtos.PersonalInformationDto;
-  contactInformation: UserDtos.ContactInformationDto;
-  authentication: UserDtos.AuthenticationDto;
-  permissions: UserDtos.PermissionsDto;
-  profileInformation: UserDtos.ProfileInformationDto;
-  prefrences: UserDtos.PreferencesDto;
+  personalInformation: UserTypes.PersonalInformationDto;
+  contactInformation: UserTypes.ContactInformationDto;
+  authentication: UserTypes.AuthenticationDto;
+  permissions: UserTypes.PermissionsDto;
+  profileInformation: UserTypes.ProfileInformationDto;
+  prefrences: UserTypes.PreferencesDto;
 };
 
 export interface UserModel extends Model<User> {
@@ -22,7 +22,7 @@ class PersonalInformation extends Document {
   @Prop({ type: String, required: true })
   lastName: string;
   @Prop({ type: String, required: true })
-  gender: UserDtos.Gender;
+  gender: UserTypes.Gender;
   @Prop({ type: String, required: true })
   deteOfBirth: string;
 }
@@ -49,7 +49,7 @@ class Authentication extends Document {
 @Schema({ _id: false })
 class Permissions extends Document {
   @Prop({ type: String, required: true })
-  role: UserDtos.UserRole;
+  role: UserTypes.UserRole;
 }
 
 @Schema({ _id: false })

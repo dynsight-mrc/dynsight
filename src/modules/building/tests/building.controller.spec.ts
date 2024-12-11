@@ -1,107 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import mongoose, { Types } from 'mongoose';
 import { BuildingController } from '../controllers/building.controller';
 import { BuildingService } from '../services/building.service';
-import mongoose, { Types } from 'mongoose';
-import { CreateBuildingWithRelatedEntities } from '../dtos/create-building.dto';
+import { BuildingSharedService } from '@modules/shared/services/building.shared.service';
+import {
+  mockBuildingService,
+  mockBuildingSharedService,
+} from './__mocks__/building.services.mock';
+import {
+  mockBuildingDoc,
+  mockBuildingDocWithDetails,
+  mockBuildingDocWithFloorsDetails,
+  mockBuildingId,
+  mockFloorsDocs,
+} from './__mocks__/building.docs.mock';
+import { HttpException } from '@nestjs/common';
 
 describe('BuildingController', () => {
   let buildingController: BuildingController;
   let buildingService: BuildingService;
-  let mockBuildingId = new mongoose.Types.ObjectId();
-  let mockOrganizationId = new mongoose.Types.ObjectId();
+  let buildingSharedService: BuildingSharedService;
 
-  const mockFloorsDocs = [
-    {
-      name: 'etage 1',
-      id: new mongoose.Types.ObjectId(),
-      number: 1,
-      buildingId: mockBuildingId,
-    },
-  ];
-
-  let mockRoomsDocs = [
-    { name: 'bloc 1', floorId: mockFloorsDocs[0].id },
-    { name: 'bloc 2', floorId: mockFloorsDocs[0].id },
-  ];
-  let mockBuilding = {
-    id: mockBuildingId,
-    organizationId: mockOrganizationId,
-    reference: 'string',
-    name: 'string',
-    constructionYear: 2012,
-    surface: 290,
-    address: {
-      streetAddress: '123 Main St',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-    type: 'industry',
-    floors: [{ ...mockFloorsDocs[0], rooms: mockRoomsDocs }],
-  };
-
-  let mockBuildingService = {
-    findOne: jest.fn().mockResolvedValueOnce(mockBuilding),
-    findByOrganizationId: jest.fn().mockResolvedValueOnce([mockBuilding]),
-    findAllOverview: jest.fn().mockResolvedValueOnce([
-      {
-        id: new mongoose.Types.ObjectId(),
-        reference: 'string',
-        name: 'string',
-        constructionYear: 2012,
-        surface: 290,
-        coordinates: { lat: 123, long: 123 },
-        type: 'industry',
-        organization: { name: 'organization', owner: 'owner' },
-        numberOfFloors: 1,
-        numberOfRooms: 1,
-      },
-    ]),
-    createBuildingWithRelatedEntites: jest.fn(),
-  };
-  let createBuildingWithRelatedEntites: CreateBuildingWithRelatedEntities = {
-    building: {
-      reference: 'building mine pro',
-      name: 'building mine pro',
-      constructionYear: 2003,
-      surface: 250,
-      type: 'commercial',
-    },
-    floors: {
-      name: ['etage 1', 'etage 2', 'etage 3'],
-      number: [1, 2, 3],
-    },
-    blocs: {
-      name: ['bloc 1', 'bloc 2'],
-      type: ['office', 'storage'],
-      surface: [200, 400],
-      floors: ['etage 1', 'etage 3'],
-    },
-    location: {
-      streetAddress: '123 MINE LOCATION',
-      streetNumber: '123',
-      streetName: 'Main St',
-      city: 'Paris',
-      state: 'Île-de-France',
-      postalCode: 75001,
-      country: 'France',
-      coordinates: {
-        lat: 123,
-        long: 3344,
-      },
-    },
-  };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BuildingController],
-      providers: [{ provide: BuildingService, useValue: mockBuildingService }],
+      providers: [
+        { provide: BuildingService, useValue: mockBuildingService },
+        { provide: BuildingSharedService, useValue: mockBuildingSharedService },
+      ],
     }).compile();
 
     buildingController = module.get<BuildingController>(BuildingController);
@@ -111,52 +38,35 @@ describe('BuildingController', () => {
   it('should be defined', () => {
     expect(buildingController).toBeDefined();
   });
+
   describe('findOne', () => {
-    it('should return the requested builiding', async () => {
-      let building = await buildingController.findOne(
+    it('throw error if any error occured', async () => {
+      let details = undefined;
+      mockBuildingSharedService.findOneById.mockRejectedValueOnce(Error(''));
+      try {
+        let response = await buildingController.findOne(
+          mockBuildingId.toString(),
+          details,
+        );
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.message).toBe(
+          "Erreur lors de la récupération des données De l'immeuble",
+        );
+      }
+    });
+    it('should return a building with details when "details" query is not provided', async () => {
+      let details = undefined;
+      mockBuildingSharedService.findOneById.mockResolvedValueOnce(
+        mockBuildingDoc,
+      );
+
+      let response = await buildingController.findOne(
         mockBuildingId.toString(),
+        details,
       );
-      expect(building).toBeDefined();
-      expect(building.floors.length).toEqual(1);
-      expect(building.floors[0].rooms.length).toEqual(2);
-    });
-  });
-  describe('findByOrganizationId', () => {
-    it('should return an array of  requested builidings', async () => {
-      let buildings = await buildingController.findByOrganizationId(
-        mockOrganizationId.toString(),
-      );
-      expect(buildings).toBeDefined();
-      expect(buildings.length).toEqual(1);
-    });
-  });
-  describe('findAllOverview', () => {
-    it('should return a list of buildings with organization name,owner,', async () => {
-      let buildings = await buildingController.findAllOverview();
-      expect(buildings).toBeDefined();
-      expect(buildings.length).toEqual(1);
-    });
-  });
-  describe('createBuildingWithRelatedEntites', () => {
-    it('should return all the created entities, building, floors[],rooms[]', async () => {
-      let buildingDoc = {...mockBuilding}
-      delete buildingDoc.floors
-      mockBuildingService.createBuildingWithRelatedEntites.mockResolvedValueOnce(
-        {
-          organization: mockOrganizationId,
-          building: buildingDoc,
-          floors: mockFloorsDocs,
-          blocs: mockRoomsDocs,
-        },
-      );
-      let results = await buildingService.createBuildingWithRelatedEntites(
-        createBuildingWithRelatedEntites,
-        mockOrganizationId.toString(),
-      );
-      expect(results).toBeDefined();
-     
-      expect(results.building).toBeDefined();
-      expect(results.building).toEqual({
+      expect(mockBuildingSharedService.findOneById).toHaveBeenCalled();
+      expect(response).toEqual({
         id: expect.any(Types.ObjectId),
         reference: expect.any(String),
         name: expect.any(String),
@@ -178,25 +88,118 @@ describe('BuildingController', () => {
         },
         organizationId: expect.any(Types.ObjectId),
       });
-      expect(results.floors).toBeDefined();
-      results.floors.forEach((floor) =>
-        expect({
-          name: expect.any(String),
+    });
+    it('should return a building with details when "details" query is provided', async () => {
+      let details = 'true';
+      mockBuildingSharedService.findOneByIdWithDetails.mockResolvedValueOnce(
+        mockBuildingDocWithDetails,
+      );
+
+      let response = await buildingController.findOne(
+        mockBuildingId.toString(),
+        details,
+      );
+      expect(
+        mockBuildingSharedService.findOneByIdWithDetails,
+      ).toHaveBeenCalled();
+      expect(response).toEqual({
+        id: expect.any(Types.ObjectId),
+        reference: expect.any(String),
+        name: expect.any(String),
+        constructionYear: expect.any(Number),
+        surface: expect.any(Number),
+        type: expect.any(String),
+        address: {
+          streetAddress: expect.any(String),
+          streetNumber: expect.any(String),
+          streetName: expect.any(String),
+          city: expect.any(String),
+          state: expect.any(String),
+          postalCode: expect.any(Number),
+          country: expect.any(String),
+          coordinates: {
+            lat: expect.any(Number),
+            long: expect.any(Number),
+          },
+        },
+        organization: {
           id: expect.any(Types.ObjectId),
-          number: expect.any(Number),
-          buildingId: expect.any(Types.ObjectId),
-        }),
-      );
-      expect(results.blocs).toBeDefined();
-      results.blocs.forEach((bloc) =>
-        expect({
           name: expect.any(String),
-          floorId: expect.any(Types.ObjectId),
-        }),
-      );
-      expect(results.organization).toBeDefined();
-      expect(results.organization).toEqual(expect.any(Types.ObjectId));
+          owner: expect.any(String),
+        },
+      });
     });
   });
 
-});
+  describe('findOneWithFloors', () => {
+    it('throw error if any error occured', async () => {
+      mockBuildingSharedService.findOneWithFloorsDetails.mockRejectedValueOnce(
+        Error(''),
+      );
+      try {
+        let response = await buildingController.findOneWithFloors(
+          mockBuildingId.toString(),
+        );
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.message).toBe(
+          "Erreur lors de la récupération des données de l'immeuble",
+        );
+      }
+    });
+
+    it('should return a building with floors details', async () => {
+      mockBuildingSharedService.findOneWithFloorsDetails.mockResolvedValueOnce(
+        mockBuildingDocWithFloorsDetails,
+      );
+
+      let response = await buildingController.findOneWithFloors(
+        mockBuildingId.toString(),
+      );
+      expect(
+        mockBuildingSharedService.findOneWithFloorsDetails,
+      ).toHaveBeenCalled();
+      expect(response).toEqual({
+        id: expect.any(Types.ObjectId),
+        reference: expect.any(String),
+        name: expect.any(String),
+        constructionYear: expect.any(Number),
+        surface: expect.any(Number),
+        type: expect.any(String),
+        address: {
+          streetAddress: expect.any(String),
+          streetNumber: expect.any(String),
+          streetName: expect.any(String),
+          city: expect.any(String),
+          state: expect.any(String),
+          postalCode: expect.any(Number),
+          country: expect.any(String),
+          coordinates: {
+            lat: expect.any(Number),
+            long: expect.any(Number),
+          },
+        },
+        organization: {
+          id: expect.any(Types.ObjectId),
+          name: expect.any(String),
+          owner: expect.any(String),
+          description:expect.any(String),
+          reference:expect.any(String)
+        },
+        floors: expect.anything(),
+      });
+      response.floors.forEach((floor) =>
+        expect(floor).toEqual({
+          name: expect.any(String),
+          id: expect.any(Types.ObjectId),
+          number: expect.any(Number),
+          building: expect.anything(),
+
+          organization: expect.anything(),
+
+          rooms: expect.anything(),
+        }),
+      );
+    });
+  });
+ });

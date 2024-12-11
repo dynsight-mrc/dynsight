@@ -1,103 +1,149 @@
-import { getModelToken } from '@nestjs/mongoose';
+import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { RoomServiceHelper } from '../services/room-helper.service';
 import { Room, RoomModel } from '../models/room.model';
 import { RoomService } from '../services/room.service';
-import mongoose, { Query, Types } from 'mongoose';
-import { Floor } from 'src/modules/floor/models/floor.model';
+import { Types } from 'mongoose';
+
+import { MongoSharedService } from '@modules/shared/services/mongo.shared.service';
 import {
-  HttpException,
-  HttpStatus,
-  InternalServerErrorException,
-} from '@nestjs/common';
-import { CreateFloorDto } from '@modules/floor/dtos/create-floors.dto';
-import { ReadRoomOverview } from '../dtos/read-room-dto';
+  createRoomDocumentAttrsDto,
+  mockConnection,
+  mockRoomDoc,
+  mockRoomDocWithDetails,
+  mockRoomId,
+} from './__mocks__/room.docs.mock';
+import { mockRoomModel } from './__mocks__/room.model.mock';
+import { CreateRoomDocumentAttrsDto } from '@modules/shared/dto/room/create-rooms.dto';
 
-describe('Blocs Service Helper', () => {
-  let mockRoomModel = {
-    insertMany: jest.fn(),
-    find: jest.fn(),
-    select: jest.fn(),
-    lean: jest.fn(),
-    populate: jest.fn(),
-  };
-  let roomServiceHelper: RoomServiceHelper;
+describe('Room Serivce', () => {
   let roomService: RoomService;
+  let mongoSharedService: MongoSharedService;
   let roomModel: RoomModel;
-  let mockOrganizationId = new mongoose.Types.ObjectId(
-    '668e8c274bf69a2e53bf59f1',
-  );
-  let mockBuildingId = new mongoose.Types.ObjectId('668e8c274bf69a2e53bf59f2');
-  let mockFloorId = new mongoose.Types.ObjectId();
-  let mockRoomId = new mongoose.Types.ObjectId();
 
-  let mockFloorsDocs: CreateFloorDto[] = [
-    {
-      id: new mongoose.Types.ObjectId(),
-      name: 'etage 1s',
-      number: 1,
-      buildingId: mockBuildingId,
-      organizationId: mockOrganizationId,
-    },
-    {
-      id: new mongoose.Types.ObjectId(),
-      name: 'etage 3s',
-      number: 2,
-      buildingId: mockBuildingId,
-      organizationId: mockOrganizationId,
-    },
-  ];
-
-  let mockPopulatedRoom = {
-    toJSON: () => ({
-      _id: mockRoomId,
-      name: 'bloc 1',
-      floorId: {
-        id: mockFloorId,
-        name: 'etage 1',
-        number: 1,
-      },
-      buildingId: {
-        id: mockBuildingId,
-        name: 'bloc 1',
-      },
-      organizationId: {
-        id: mockOrganizationId,
-        name: 'organization_name',
-      },
-      surface: 25,
-    }),
-  };
-
-  let mockRoomDoc = {
-    toJSON: () => ({
-      id: mockRoomId,
-      name: 'bloc 1',
-      floorId: {id:mockFloorId,name:"floor_1",number:1},
-      buildingId: mockBuildingId,
-      organizationId: mockOrganizationId,
-      surface: 25,
-    }),
-  };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        RoomService,
-        RoomServiceHelper,
         { provide: getModelToken(Room.name), useValue: mockRoomModel },
+
+        RoomService,
+        MongoSharedService,
+        {
+          provide: getConnectionToken('Database'),
+          useValue: mockConnection,
+        },
       ],
     }).compile();
     roomService = module.get<RoomService>(RoomService);
-    roomServiceHelper = module.get<RoomServiceHelper>(RoomServiceHelper);
+    mongoSharedService = module.get<MongoSharedService>(MongoSharedService);
     roomModel = module.get<RoomModel>(getModelToken(Room.name));
   });
 
   it('It should be defined', () => {
     expect(roomService).toBeDefined();
-    expect(roomServiceHelper).toBeDefined();
-    expect(roomModel).toBeDefined();
   });
-  describe('createMany', () => {
+
+  describe('findOneById', () => {
+    it('create should throw error if could not find room for any reason', async () => {
+      jest.spyOn(roomModel, 'findOne').mockRejectedValueOnce(Error);
+      try {
+        await roomService.findOneById(mockRoomId.toString());
+      } catch (error) {
+        expect(error.message).toEqual(
+          'Error occured while retrieving room data',
+        );
+      }
+    });
+
+    it('should return a room document', async () => {
+      jest
+        .spyOn(roomModel, 'findOne')
+        .mockResolvedValueOnce({ toJSON: () => mockRoomDoc });
+      let roomDoc = await roomService.findOneById(mockRoomId.toString());
+      expect(roomDoc).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        floorId: expect.any(Types.ObjectId),
+        buildingId: expect.any(Types.ObjectId),
+        organizationId: expect.any(Types.ObjectId),
+        surface: expect.any(Number),
+      });
+    });
+  });
+  describe('findOneByIdWithDetails', () => {
+    it('should throw error if couldnot retrieve document for any reason', async () => {
+      jest.spyOn(roomModel, 'findOne').mockRejectedValueOnce(Error);
+      try {
+        await roomService.findOneById(mockRoomId.toString());
+      } catch (error) {
+        expect(error.message).toEqual(
+          'Error occured while retrieving room data',
+        );
+      }
+    });
+
+    it('should return a room with more details in reference attributes', async () => {
+      jest
+        .spyOn(mongoSharedService, 'getReferenceFields')
+        .mockReturnValue(['floorId', 'buildingId', 'organizationId']),
+        //jest.spyOn(mongoSharedService,"transformIdAttributes").mockReturnValueOnce(mockRoomTransformedAttrs)
+        jest.spyOn(roomModel, 'findOne').mockReturnThis();
+      jest
+        .spyOn(roomModel, 'populate')
+        .mockResolvedValueOnce({ toJSON: () => mockRoomDocWithDetails } as any);
+      let room = await roomService.findOneByIdWithDetails(
+        mockRoomId.toString(),
+      );
+
+      expect(room).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        floor: {
+          id: expect.any(Types.ObjectId),
+          name: expect.any(String),
+          number: expect.any(Number),
+        },
+        building: {
+          id: expect.any(Types.ObjectId),
+          name: expect.any(String),
+        },
+        organization: {
+          id: expect.any(Types.ObjectId),
+          name: expect.any(String),
+        },
+        surface: expect.any(Number),
+      });
+    });
+  });
+  describe('createOne', () => {
+    it('should throw error if room already exist', async () => {
+      jest.spyOn(roomModel, 'findOne').mockResolvedValueOnce(mockRoomDoc);
+      try {
+        await roomService.createOne(createRoomDocumentAttrsDto);
+      } catch (error) {
+        expect(error.message).toEqual('Room Already exist with this name');
+      }
+    });
+    it('should create room and return its value', async () => {
+      jest.spyOn(roomModel, 'findOne').mockResolvedValueOnce(null);
+      let roomDoc = {
+        save: jest.fn().mockResolvedValue(true),
+        toJSON: () => mockRoomDoc,
+      };
+      jest.spyOn(roomModel, 'build').mockReturnValueOnce(roomDoc as any);
+      let room = await roomService.createOne(createRoomDocumentAttrsDto);
+      expect(room).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        floorId: expect.any(Types.ObjectId),
+        buildingId: expect.any(Types.ObjectId),
+        organizationId: expect.any(Types.ObjectId),
+        surface: expect.any(Number),
+      });
+    });
+  });
+
+  /*
+   describe('createMany', () => {
     it('throw error if createRoomsData is inconveniet', async () => {
       let mockOrganizationId = new mongoose.Types.ObjectId();
       let mockBuildingId = new mongoose.Types.ObjectId();
@@ -320,21 +366,19 @@ describe('Blocs Service Helper', () => {
   });
   describe('findAllOverview', () => {
     it('should throw an error if could not fetch the requsted room for any reasons', async () => {
-      /*  mockRoomModel.find.mockReturnThis();
-      mockRoomModel.populate.mockResolvedValue(mockPopulatedRoom);
- */
+   
       jest.spyOn(roomModel, 'find').mockReturnThis();
       jest.spyOn(roomModel, 'populate').mockRejectedValueOnce(new Error(''));
 
-      /* try {
-        await roomService.findAllOverview();
-      } catch (error) {
-        expect(error).toEqual('Error while retrieving the rooms data');
-      }
-       */
+      // try {
+        //await roomService.findAllOverview();
+      //} catch (error) {
+        //expect(error).toEqual('Error occured while retrieving the rooms data');
+      //}
+       
 
       await expect(() => roomService.findAllOverview()).rejects.toThrow(
-        'Error while retrieving the rooms data',
+        'Error occured while retrieving the rooms data',
       );
     });
     it('should return a list of building with the format ReadBuildingOverview[]', async () => {
@@ -393,5 +437,5 @@ describe('Blocs Service Helper', () => {
         });
       });
     });
-  });
+  }); */
 });

@@ -12,6 +12,7 @@ async function bootstrap() {
     optionsSuccessStatus:200
   })
   app.setGlobalPrefix("api")
+  
   app.useGlobalPipes(new ValidationPipe({
     transform:true,
     whitelist:true

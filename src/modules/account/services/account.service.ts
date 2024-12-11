@@ -1,121 +1,134 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { CreateAccountDto } from '../dto/create-account.dto';
-import { UpdateAccountDto } from '../dto/update-account.dto';
-import { OrganizationService } from '../../organization/services/organization.service';
-import mongoose, { Connection } from 'mongoose';
-import { RoomService } from '@modules/room/services/room.service';
+import { Injectable } from '@nestjs/common';
+import { CreateAccountAttrsDto } from '../dto/create-account.dto';
+import { Connection } from 'mongoose';
+
 import { InjectConnection } from '@nestjs/mongoose';
-import { BuildingService } from '@modules/building/services/building.service';
-import { FloorService } from '@modules/floor/services/floor.service';
-import { UserService } from '@modules/user/services/user.service';
 import { ReadAccountDto } from '../dto/read-account.dto';
+import { BuildingSharedService } from '@modules/shared/services/building.shared.service';
+import { OrganizationSharedService } from '@modules/shared/services/organization.shared.service';
+import { ReadOrganizationDocumentDto } from '@modules/shared/dto/organization/read-organization.dto';
+import { RoomSharedService } from '@modules/shared/services/room.shared.service';
+import { FloorSharedService } from '@modules/shared/services/floor.shared.service';
+import { UserSharedService } from '@modules/shared/services/user.shared.service';
+import { ReadBuildingDocumentDto } from '@modules/building/dtos/read-buildings.dto';
+import { ReadFloorDocumentDto } from '@modules/shared/dto/floor/read-floor.dto';
+import { ReadRoomDocumentDto } from '@modules/shared/dto/room/read-rooms.dto';
+import { ReadUserDocumentDto } from '@modules/shared/dto/user/read-user.dto';
 
 @Injectable()
 export class AccountService {
   constructor(
-    private readonly organizationService: OrganizationService,
-    private readonly buildingService: BuildingService,
-    private readonly roomService: RoomService,
-    private readonly floorService: FloorService,
-    private readonly userService: UserService,
+    private readonly organizationSharedService: OrganizationSharedService,
+    private readonly buildingSharedService: BuildingSharedService,
+    private readonly roomSharedService: RoomSharedService,
+    private readonly floorSharedService: FloorSharedService,
+    private readonly userShareService: UserSharedService,
     @InjectConnection() private connection: Connection,
   ) {}
-  async create(createAccountDto: CreateAccountDto): Promise<ReadAccountDto> {
-    let { organization, building, location, floors, blocs, users } =
-      createAccountDto;
-    
+  async create(
+    createAccountDto: CreateAccountAttrsDto,
+  ): Promise<ReadAccountDto> {
+
+    let {
+      organization,
+      building,
+      location,
+      floors,
+      blocs: rooms,
+      users,
+    } = createAccountDto;
+
     const session = await this.connection.startSession();
     session.startTransaction();
-    
+    let organizationDoc: ReadOrganizationDocumentDto;
     try {
-      const organizationDoc = await this.organizationService.create(
+      organizationDoc = await this.organizationSharedService.createOne(
         organization,
         session,
       );
-  
+    } catch (error) {
+      await session.abortTransaction();
+ 
+      throw error;
+    }
+    let buildingDoc: ReadBuildingDocumentDto;
+    try {
       //create building
-      let buildingDoc = await this.buildingService.create(
+      buildingDoc = await this.buildingSharedService.createOne(
         {
           ...building,
+          organizationId: organizationDoc.id.toString(),
           address: location,
-          organizationId: new mongoose.Types.ObjectId(organizationDoc.id),
-          //organizationId: new mongoose.Types.ObjectId("668d5b6dcea37fd8147083ce"),
         },
         session,
       );
-
-      //create floors
-      const floorsDocs = await this.floorService.createMany(
-        {
-          organizationId: new mongoose.Types.ObjectId(organizationDoc.id),
-          buildingId: new mongoose.Types.ObjectId(buildingDoc.id),
-          ...floors,
-        },
-        session,
-      );
-        
-      //create blocs
-
-      const blocsDocs = await this.roomService.createMany(
-        blocs,
-        floorsDocs,
-        buildingDoc.id,
-        organizationDoc.id,
-        session,
-      );
-
-      //create users
-      const usersDocs = await this.userService.createMany(
-        users,
-        buildingDoc.id,
-        organizationDoc.id,
-        session,
-      );
-        
-        
-      await session.commitTransaction();
-
-      return {
-        organization: organizationDoc,
-        building: buildingDoc,
-        floors: floorsDocs,
-        blocs: blocsDocs,
-        users: usersDocs,
-      };
     } catch (error) {
       await session.abortTransaction();
 
-      if (error.code === 409) {
-
-        throw new HttpException(
-          `Erreur s'est produite lors de la création du compte, ${error.message}`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      //throw new Error("Transaction aborted due to an error:")
-      throw new HttpException(
-        `Erreur s'est produite lors de la création du compte, ${error.message} ,veuillez réessayer !`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    } finally {
-      session.endSession();
+      throw error;
     }
-  }
 
-  findAll() {
-    return `This action returns all account`;
-  }
+    let floorsDocs: ReadFloorDocumentDto[];
+    try {
+      //create floors
+      let formatedFloors = this.floorSharedService.formatFloorsRawData({
+        ...floors,
+        organizationId: organizationDoc.id.toString(),
+        buildingId: buildingDoc.id.toString(),
+      });
+      floorsDocs = await this.floorSharedService.createMany(
+        formatedFloors,
+        session,
+      );
+    } catch (error) {
+         
+      await session.abortTransaction();
 
-  findOne(id: number) {
-    return `This action returns a #${id} account`;
-  }
+      throw error;
+    }
+    let roomsDocs: ReadRoomDocumentDto[];
+    try {
+      let formatedRooms = this.roomSharedService.formatRoomsRawData(
+        rooms,
+        floorsDocs,
+        buildingDoc.id.toString(),
+        organizationDoc.id.toString(),
+      );
+      
+      roomsDocs = await this.roomSharedService.createMany(
+        formatedRooms,
+        session,
+      );
+    } catch (error) {
+      await session.abortTransaction();
 
-  update(id: number, updateAccountDto: UpdateAccountDto) {
-    return `This action updates a #${id} account`;
-  }
+      throw error
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} account`;
+    let usersDocs: ReadUserDocumentDto[];
+    try {
+      //create users
+      usersDocs = await this.userShareService.createMany(
+        users,
+        buildingDoc.id.toString(),
+        organizationDoc.id.toString(),
+        session,
+      );
+    } catch (error) {
+      await session.abortTransaction();
+
+     throw error
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      organization: organizationDoc,
+      building: buildingDoc,
+      floors: floorsDocs,
+      rooms: roomsDocs,
+      users: usersDocs,
+    };
   }
 }

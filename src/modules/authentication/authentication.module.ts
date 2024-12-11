@@ -5,6 +5,7 @@ import { UserAccount, UserSchema } from '@modules/user/models/user.model';
 import { PasswordServiceHelper } from './services/password-helper.service';
 import { AuthenticationService } from './services/authentication.service';
 import { User, UserSchema2 } from './models/user.model';
+import { UserSharedService } from '@modules/shared/services/user.shared.service';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { User, UserSchema2 } from './models/user.model';
     ]),
   ],
   controllers: [AuthenticationController],
-  providers: [AuthenticationService,PasswordServiceHelper],
+  providers: [AuthenticationService,PasswordServiceHelper,UserSharedService],
 })
 export class AuthenticationModule {}

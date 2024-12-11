@@ -2,104 +2,41 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrganizationService } from '../services/organization.service';
 import { Organization, OrganizationModel } from '../models/organization.model';
 import { getModelToken } from '@nestjs/mongoose';
-import { CreateOrganizationDto } from '../dtos/create-organization.dto';
-import { OrganizationServiceHelper } from '../services/organization-helper.service';
-import { HttpException, InternalServerErrorException } from '@nestjs/common';
-import mongoose from 'mongoose';
+
+import mongoose, { Types } from 'mongoose';
 import { FloorService } from '@modules/floor/services/floor.service';
 import { RoomService } from '@modules/room/services/room.service';
-import { BuildingService } from '@modules/building/services/building.service';
+import { BuildingSharedService } from '@modules/shared/services/building.shared.service';
+import { Building } from '@modules/building/models/building.model';
+import { mockOrganizationModel } from './__mocks__/organization.model.mock';
+import { mockBuildingSharedService } from './__mocks__/organization.services.mock';
+import {
+  mockBuildingDocWithFloorsDetails,
+  mockOrganizationDoc,
+  mockOrganizationId,
+} from './__mocks__/organization.docs.mock';
 
 describe('OrganizationService', () => {
   let organizationService: OrganizationService;
-  let organizationServiceHelper: OrganizationServiceHelper;
   let organizationModel: OrganizationModel;
-  let mockResolvedOrganizationsOverview = [
-    {
-      name: 'Xiaomi',
-      reference: 'AB13',
-      description: 'Tech Company',
-      owner: 'Mao Si Tong',
-      numberOfBuildings: 1,
-      totalSurface: 350,
-      id: new mongoose.Types.ObjectId('6698f8f03b58ac9f0cd9dc41'),
-    },
-  ];
-  const mockOrganizationDoc = {
-    id: '620b48f4a4e10b001e6d2b3d',
-    name: 'string',
-    reference: 'string',
-    description: 'string',
-    owner: 'string',
-    save: jest.fn().mockResolvedValue(true),
-  };
-  const mockBuildingDocs = [
-    {
-      reference: 'BAT_1',
-      name: 'Mobile Corporation',
-      constructionYear: 2020,
-      surface: 125,
-      address: {},
-      type: 'commercial',
-      id: new mongoose.Types.ObjectId(),
-    },
-  ];
-
-  const mockFloorsDocs = [
-    {
-      name: 'etage 1',
-      id: new mongoose.Types.ObjectId(),
-      number: 1,
-      buildingId: mockBuildingDocs[0].id,
-    },
-    {
-      name: 'etage 2',
-      id: new mongoose.Types.ObjectId(),
-      number: 1,
-      buildingId: mockBuildingDocs[0].id,
-    },
-  ];
-
-  let mockRoomsDocs = [
-    { name: 'bloc 1', floorId: mockFloorsDocs[0].id },
-    { name: 'bloc 2', floorId: mockFloorsDocs[1].id },
-  ];
-
-  const mockOrganizationModel = {
-    findById: jest.fn(),
-    build: jest.fn().mockReturnValue(mockOrganizationDoc),
-    aggregate: jest.fn(),
-    findOne: jest.fn(),
-  };
-  const mockBuildingService = {
-    findByOrganizationId: jest.fn(),
-  };
-  const mockFloorService = {
-    findByBuildingId: jest.fn(),
-  };
-  const mockRoomService = {
-    findByFloorId: jest.fn(),
-  };
+  let buildingSharedService: BuildingSharedService;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationService,
-        OrganizationServiceHelper,
         {
           provide: getModelToken(Organization.name),
           useValue: mockOrganizationModel,
         },
-        { provide: FloorService, useValue: mockFloorService },
-        { provide: RoomService, useValue: mockRoomService },
-        { provide: BuildingService, useValue: mockBuildingService },
+        { provide: BuildingSharedService, useValue: mockBuildingSharedService },
       ],
     }).compile();
 
-    organizationServiceHelper = module.get<OrganizationServiceHelper>(
-      OrganizationServiceHelper,
-    );
     organizationService = module.get<OrganizationService>(OrganizationService);
+    buildingSharedService = module.get<BuildingSharedService>(
+      BuildingSharedService,
+    );
     organizationModel = module.get<OrganizationModel>(
       getModelToken(Organization.name),
     );
@@ -109,7 +46,184 @@ describe('OrganizationService', () => {
     expect(organizationService).toBeDefined();
   });
 
-  describe('Create', () => {
+  describe('findOneById', () => {
+    it('should throw error if could not retrieve building data', async () => {
+      mockOrganizationModel.findOne.mockRejectedValueOnce(Error);
+
+      try {
+        await organizationService.findOneById(mockOrganizationId.toString());
+      } catch (error) {
+        expect(error.message).toBe(
+          'Error occured while retrieving organization details',
+        );
+      }
+    });
+    it('should return null if could not found any data', async () => {
+      mockOrganizationModel.findOne.mockResolvedValueOnce(null);
+
+      let results = await organizationService.findOneById(
+        mockOrganizationId.toString(),
+      );
+      expect(results).toBe(null);
+    });
+    it('should return the requested building object', async () => {
+      mockOrganizationModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockOrganizationDoc,
+      });
+
+      let results = await organizationService.findOneById(
+        mockOrganizationId.toString(),
+      );
+
+      expect(results).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+      });
+    });
+  });
+
+  describe('findOneByIdWithDetails', () => {
+    it('should throw error if findone throws error', async () => {
+      mockOrganizationModel.findOne.mockRejectedValueOnce(Error(''));
+
+      try {
+        await organizationService.findOneByIdWithDetails(
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(error.message).toBe(
+          'Error while retrieving organization details!',
+        );
+      }
+    });
+    it('should return null if could not found any organization', async () => {
+      mockOrganizationModel.findOne.mockResolvedValueOnce(null);
+      let results = await organizationService.findOneByIdWithDetails(
+        mockOrganizationId.toString(),
+      );
+      expect(results).toBe(null);
+    });
+    it('should throw error of buildingSharedService-findManyWithFloorsDetails throws error', async () => {
+      mockOrganizationModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockOrganizationDoc,
+      });
+      mockBuildingSharedService.findManyWithFloorsDetails.mockRejectedValueOnce(
+        Error(''),
+      );
+      try {
+        let results = await organizationService.findOneByIdWithDetails(
+          mockOrganizationId.toString(),
+        );
+      } catch (error) {
+        expect(error.message).toBe(
+          'Error occured while retrieving organzation data',
+        );
+      }
+    });
+    it('should return the organization with related details', async () => {
+      mockOrganizationModel.findOne.mockResolvedValueOnce({
+        toJSON: () => mockOrganizationDoc,
+      });
+      
+      mockBuildingSharedService.findManyWithFloorsDetails.mockResolvedValueOnce([
+        mockBuildingDocWithFloorsDetails,
+      ]);
+
+      let results = await organizationService.findOneByIdWithDetails(
+        mockOrganizationId.toString(),
+      );
+      expect(results).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+        buildings: expect.anything(),
+      });
+      results.buildings.forEach((ele) => {
+        expect(ele).toEqual({
+          id: expect.any(Types.ObjectId),
+          reference: expect.any(String),
+          name: expect.any(String),
+          constructionYear: expect.any(Number),
+          surface: expect.any(Number),
+          type: expect.any(String),
+          address: {
+            streetAddress: expect.any(String),
+            streetNumber: expect.any(String),
+            streetName: expect.any(String),
+            city: expect.any(String),
+            state: expect.any(String),
+            postalCode: expect.any(Number),
+            country: expect.any(String),
+            coordinates: {
+              lat: expect.any(Number),
+              long: expect.any(Number),
+            },
+          },
+          organization: {
+            id: expect.any(Types.ObjectId),
+            owner: expect.any(String),
+            name: expect.any(String),
+            reference: expect.any(String),
+            description: expect.any(String),
+          },
+          floors: expect.anything(),
+        });
+        let { floors } = ele;
+        floors.forEach((floor) =>
+          expect(floor).toEqual({
+            name: expect.any(String),
+            id: expect.any(Types.ObjectId),
+            number: expect.any(Number),
+            building: expect.anything(),
+            organization: expect.anything(),
+            rooms: expect.anything(),
+          }),
+        );
+      });
+    });
+  });
+
+  describe('updateOneById', () => {
+    it('should throw error if mongoose update throws error', async () => {
+      mockOrganizationModel.findOneAndUpdate.mockRejectedValueOnce(Error(''));
+      let updateFields = JSON.parse(JSON.stringify(mockOrganizationDoc));
+      delete updateFields.id;
+      try {
+        await organizationService.updateOneById(
+          mockOrganizationId.toString(),
+          updateFields,
+        );
+      } catch (error) {
+        expect(error.message).toBe('Error occured while updating organization');
+      }
+    });
+    it('should update and return new organization', async () => {
+      mockOrganizationModel.findOneAndUpdate.mockResolvedValueOnce(
+        mockOrganizationDoc,
+      );
+      let updateFields = JSON.parse(JSON.stringify(mockOrganizationDoc));
+      delete updateFields.id;
+
+      let results = await organizationService.updateOneById(
+        mockOrganizationId.toString(),
+        updateFields,
+      );
+
+      expect(results).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+      });
+    });
+  });
+  /* describe('Create', () => {
     it('Throw error if organization name exists', async () => {
       jest
         .spyOn(organizationServiceHelper, 'checkIfOrganizationExists')
@@ -281,5 +395,11 @@ describe('OrganizationService', () => {
     mockBuildingService.findByOrganizationId.mockReset();
     mockFloorService.findByBuildingId.mockReset();
     mockRoomService.findByFloorId.mockReset();
+  }); */
+
+  afterEach(() => {
+    mockOrganizationModel.updateOne.mockReset();
+    mockOrganizationModel.findOne.mockReset();
+    mockBuildingSharedService.findManyWithFloorsDetails.mockReset();
   });
 });

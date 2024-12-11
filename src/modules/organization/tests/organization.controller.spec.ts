@@ -2,15 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrganizationController } from '../controllers/organization.controller';
 import { OrganizationService } from '../services/organization.service';
 
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
-
-const mockOrganizationService = {
-  findAll: jest.fn().mockResolvedValue(['ok']),
-  findAllOverview: jest.fn(),
-  findById: jest.fn(),
-};
+import { mockOrganizationService } from './__mocks__/organization.services.mock';
+import { HttpException } from '@nestjs/common';
+import {
+  mockOrganizationDoc,
+  mockOrganizationDocWithDetails,
+} from './__mocks__/organization.docs.mock';
+import { ReadOrganizationDocumentWithDetails } from '../dtos/read-organization.dto';
 
 describe('OrganizationController', () => {
   let organizationController: OrganizationController;
@@ -18,17 +19,7 @@ describe('OrganizationController', () => {
   let mockOrganizationId = new mongoose.Types.ObjectId(
     '6698f8f03b58ac9f0cd9dc41',
   );
-  let mockResolvedOrganizationsOverview = [
-    {
-      name: 'Xiaomi',
-      reference: 'AB13',
-      description: 'Tech Company',
-      owner: 'Mao Si Tong',
-      numberOfBuildings: 1,
-      totalSurface: 350,
-      id: mockOrganizationId,
-    },
-  ];
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrganizationController],
@@ -50,31 +41,127 @@ describe('OrganizationController', () => {
     expect(organizationController).toBeDefined();
   });
 
-  describe('findAllOverview', () => {
-    it('should return an array of organizations overview objects', async () => {
-      mockOrganizationService.findAllOverview.mockResolvedValueOnce(
-        mockResolvedOrganizationsOverview,
+  describe('findOne', () => {
+    it('it should throw error if findOneById throw error ', async () => {
+      let details = undefined;
+      mockOrganizationService.findOneById.mockRejectedValueOnce(Error(''));
+      try {
+        await organizationController.findOne(
+          mockOrganizationId.toString(),
+          undefined,
+        );
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect(error.message).toBe(
+          'Error occured while retrieving organization data',
+        );
+      }
+    });
+    it('it should return organization document if no details are provided', async () => {
+      let details = undefined;
+      mockOrganizationService.findOneById.mockResolvedValueOnce(
+        mockOrganizationDoc,
       );
-      let organizationsOverview =
-        await organizationController.findAllOverview();
-      expect(mockOrganizationService.findAllOverview).toHaveBeenCalled();
-      expect(organizationsOverview).toBeDefined();
-      expect(organizationsOverview).toEqual(mockResolvedOrganizationsOverview);
+
+      let response = await organizationController.findOne(
+        mockOrganizationId.toString(),
+        details,
+      );
+      expect(response).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+      });
+    });
+    it('it should return organization document with related entities if details are provided', async () => {
+      let details = 'true';
+      mockOrganizationService.findOneByIdWithDetails.mockResolvedValueOnce(
+        mockOrganizationDocWithDetails,
+      );
+
+      let response = (await organizationController.findOne(
+        mockOrganizationId.toString(),
+        details,
+      )) as undefined as ReadOrganizationDocumentWithDetails;
+      expect(response).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+        buildings: expect.anything(),
+      });
+      response.buildings.forEach((ele) => {
+        expect(ele).toEqual({
+          id: expect.any(Types.ObjectId),
+          reference: expect.any(String),
+          name: expect.any(String),
+          constructionYear: expect.any(Number),
+          surface: expect.any(Number),
+          type: expect.any(String),
+          address: {
+            streetAddress: expect.any(String),
+            streetNumber: expect.any(String),
+            streetName: expect.any(String),
+            city: expect.any(String),
+            state: expect.any(String),
+            postalCode: expect.any(Number),
+            country: expect.any(String),
+            coordinates: {
+              lat: expect.any(Number),
+              long: expect.any(Number),
+            },
+          },
+          organization: {
+            id: expect.any(Types.ObjectId),
+            owner: expect.any(String),
+            name: expect.any(String),
+            reference: expect.any(String),
+            description: expect.any(String),
+          },
+          floors: expect.anything(),
+        });
+        let { floors } = ele;
+        floors.forEach((floor) =>
+          expect(floor).toEqual({
+            name: expect.any(String),
+            id: expect.any(Types.ObjectId),
+            number: expect.any(Number),
+            building: expect.anything(),
+            organization: expect.anything(),
+            rooms: expect.anything(),
+          }),
+        );
+      });
     });
   });
 
-  describe('findById', () => {
-    it('should return the requested organization', async () => {
-      mockOrganizationService.findById.mockResolvedValueOnce(
-        mockResolvedOrganizationsOverview[0],
-      );
-      let organizationOverview = await organizationController.findOne(
-        mockOrganizationId.toString(),
-      );
-      expect(organizationOverview).toBeDefined();
-      expect(organizationOverview).toEqual(
-        mockResolvedOrganizationsOverview[0],
-      );
+  describe('updateOne', () => {
+    it('should throw error if organizaionService updateOneById throws error',async()=>{
+      mockOrganizationService.updateOneById.mockRejectedValueOnce(Error(""))
+      let updateFields = JSON.parse(JSON.stringify(mockOrganizationDoc));
+      delete updateFields.id;
+      try {
+        await organizationController.updateOne(mockOrganizationId.toString(),updateFields)
+      } catch (error) {
+        expect(error.message).toBe("Erreur lors de la mise a jour de l'organization")
+      }
     });
+    it("should return the updated organization",async()=>{
+      mockOrganizationService.updateOneById.mockResolvedValueOnce(mockOrganizationDoc)
+      let updateFields = JSON.parse(JSON.stringify(mockOrganizationDoc));
+      delete updateFields.id;
+      
+      let reponse=  await organizationController.updateOne(mockOrganizationId.toString(),updateFields)
+      expect(reponse).toEqual({
+        id: expect.any(Types.ObjectId),
+        name: expect.any(String),
+        reference: expect.any(String),
+        description: expect.any(String),
+        owner: expect.any(String),
+      });
+    })
   });
 });

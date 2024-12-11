@@ -1,9 +1,10 @@
-import { CreateUserDto } from '@modules/user/dto/create-user.dto';
 import { UserAccount, UserAccountModel } from '@modules/user/models/user.model';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { PasswordServiceHelper } from './password-helper.service';
+import { CreateUserDocumentAttrsDto } from '@modules/shared/dto/user/create-user.dto';
+import { ReadUserDocumentDto } from '@modules/shared/dto/user/read-user.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -32,7 +33,9 @@ export class AuthenticationService {
     }
   }
 
-  async createOne(createUserDto: CreateUserDto): Promise<UserAccount> {
+  async createOne(
+    createUserDto: CreateUserDocumentAttrsDto,
+  ): Promise<ReadUserDocumentDto> {
     let passwordHash = await this.passwordServiceHelper.createPasswordHash(
       createUserDto.authentication.password,
     );
@@ -44,7 +47,7 @@ export class AuthenticationService {
     try {
       let doc = this.userModel.build(createUserDto);
       await doc.save();
-      return doc;
+      return doc as undefined as ReadUserDocumentDto;
     } catch (error) {
       console.log(error);
     }

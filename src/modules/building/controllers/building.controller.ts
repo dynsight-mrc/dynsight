@@ -1,95 +1,70 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
+  HttpCode,
+  InternalServerErrorException,
   Param,
-  Delete,
-  Patch,
+  Post,
   Query,
   UseGuards,
-  InternalServerErrorException,
-  HttpStatus,
-  HttpCode,
 } from '@nestjs/common';
-import { BuildingService } from '../services/building.service';
-import {
-  CreateBuildingDto,
-  CreateBuildingWithRelatedEntities,
-} from '../dtos/create-building.dto';
-import {
-  ReadBuildingDto,
-  ReadBuildingWithDetailedFloorsList,
-  ReadCreatedBuildingDto,
-} from '../dtos/read-building.dto';
+
 import { AuthorizationGuard } from '@common/guards/authorization.guard';
-import { Building } from '../models/building.model';
+import { BuildingService } from '../services/building.service';
+
+import {
+  ReadBuildingDocumentwithDetailsDto,
+  ReadBuildingDocumentWithFloorsDetailsDto,
+} from '@modules/shared/dto/building/read-buildng.dto';
+import { ReadBuildingDocumentDto } from '../dtos/read-buildings.dto';
+
+import { BuildingSharedService } from '@modules/shared/services/building.shared.service';
 
 @Controller('buildings')
 @UseGuards(AuthorizationGuard)
 export class BuildingController {
-  constructor(private readonly buildingService: BuildingService) {}
+  constructor(
+    private readonly buildingService: BuildingService,
+    private readonly buildingSharedService: BuildingSharedService,
+  ) {}
 
-  /* @Post()
-  create(
-    @Body() createBuildingDto: CreateBuildingDto,
-  ): Promise<ReadBuildingDto> {
-    return this.buildingService.create(createBuildingDto);
-  } */
-  @Post('')
-  @HttpCode(201)
-  async create(
-    @Query('organization') organization: string,
-    @Body() createBuildingDto: CreateBuildingWithRelatedEntities,
-  ): Promise<ReadCreatedBuildingDto> {
+  @Get('/:id')
+  async findOne(
+    @Param('id') id: string,
+    @Query('details') details: string,
+  ): Promise<ReadBuildingDocumentwithDetailsDto | ReadBuildingDocumentDto> {
     try {
-      let buildingDetails =
-        await this.buildingService.createBuildingWithRelatedEntites(
-          createBuildingDto,
-          organization,
-        );
-      return buildingDetails;
-    } catch (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-  // api/buildings
-  //GET BUILDINGS OVERVIEW
-  @Get('overview')
-  async findAllOverview() {
-    try {
-      let buildingsOverview = await this.buildingService.findAllOverview();
-      return buildingsOverview;
+      if (!details) {
+        let building = (await this.buildingSharedService.findOneById(
+          id,
+        )) as ReadBuildingDocumentDto;
+        return building;
+      }
+
+      let building = (await this.buildingSharedService.findOneByIdWithDetails(
+        id,
+      )) as ReadBuildingDocumentwithDetailsDto;
+      return building;
     } catch (error) {
       throw new InternalServerErrorException(
-        "erreur s'est produite lors de la récupérations des données des immeubles",
+        "Erreur lors de la récupération des données De l'immeuble",
       );
     }
   }
 
-  //api/buildings/:id
-  //GET BUILDING BY ID (WITH ALL ENTITES: FLOORS=>ROOMS)
-  @Get(':id')
-  async findOne(
+  @Get('/:id/with-floors')
+  async findOneWithFloors(
     @Param('id') id: string,
-  ): Promise<ReadBuildingWithDetailedFloorsList | null> {
-    let building = await this.buildingService.findOne(id);
-
-    return building;
-  }
-
-  //api/buildings?organization
-  //GET BUILDINGS WITH ORGANIZATIONID
-  @Get('')
-  findByOrganizationId(@Query('organization') organization: string) {
-    return this.buildingService.findByOrganizationId(organization);
-  }
-
-  @Patch(':id')
-  update() {}
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.buildingService.delete();
+  ): Promise<ReadBuildingDocumentWithFloorsDetailsDto> {
+    try {
+      let building =
+        await this.buildingSharedService.findOneWithFloorsDetails(id);
+      return building;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur lors de la récupération des données de l'immeuble",
+      );
+    }
   }
 }

@@ -5,21 +5,21 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 
-import { MongooseModule } from '@nestjs/mongoose';
 import { RoomModule } from './modules/room/room.module';
 import { FloorModule } from './modules/floor/floor.module';
 import { BuildingModule } from './modules/building/building.module';
-import { APP_PIPE } from '@nestjs/core';
+
 import { WattsenseModule } from './modules/wattsense/wattsense.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { ModbusModule } from './modules/modbus/modbus.module';
-import { AuthenticationController } from './modules/authentication/controllers/authentication.controller';
+
 import { AuthenticationModule } from './modules/authentication/authentication.module';
 import { ExtractToken } from './common/middlewares/extractToken.middleware';
 import { AccountModule } from './modules/account/account.module';
 import { UserModule } from './modules/user/user.module';
 import { MongodbModule } from './common/databaseConnections/mongodb.module';
+import { SharedModule } from './modules/shared/shared.module';
 
 @Module({
   imports: [
@@ -39,6 +39,7 @@ import { MongodbModule } from './common/databaseConnections/mongodb.module';
     AuthenticationModule,
     AccountModule,
     UserModule,
+    SharedModule,
   ],
 })
 export class AppModule implements NestModule {

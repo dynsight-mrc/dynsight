@@ -1,62 +1,41 @@
-import { ArrayMinSize, ArrayNotEmpty, IsArray, IsIn, IsInt, IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
-import { Types } from "mongoose";
+import { Type } from '@nestjs/common';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { Types } from 'mongoose';
 
+export class CreateRoomDocumentAttrsDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
 
-export class CreateRoomsDto{
+  @IsString()
+  @IsOptional()
+  floor?: string;
 
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    name:string[]
+  @IsString()
+  @IsOptional()
+  building?: string;
 
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    floors: string[]
+  @IsString()
+  @IsOptional()
+  organization?: string;
 
-   /*  @IsMongoId()
-    buildingId: Types.ObjectId
+  @IsArray()
+  @IsString()
+  @IsOptional()
+  zone?: string;
 
-    @IsMongoId()
-    organizationId:Types.ObjectId */
-
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsInt({ each: true })
-    surface? : number[]
-
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    type? : string[]
-
-}
-export class createRoomsWithExistingFloorsDto{
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    floors:string[]
-
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    name:string[]
-
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsInt({ each: true })
-    surface:number[]
-
-    @IsArray()
-    @ArrayNotEmpty()
-    @ArrayMinSize(1)
-    @IsString({ each: true })
-    type:string[]
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  properties?: string[];
 }

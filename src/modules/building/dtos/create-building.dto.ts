@@ -1,9 +1,5 @@
-import { Types } from 'mongoose';
+
 import { AddressDto } from './building-address.dto';
-
-
-
-import { UserRole } from '@modules/user/dto/user.dto';
 import { Type } from 'class-transformer';
 import {
   IsString,
@@ -16,30 +12,6 @@ import {
   IsMongoId,
 } from 'class-validator';
 
-export class CreateBuildingDto {
-  @IsString()
-  reference: string;
-
-  @IsMongoId()
-  organizationId: Types.ObjectId;
-
-  @IsString()
-  name: string;
-
-  @IsNumber()
-  constructionYear: number;
-
-  @IsNumber()
-  surface: number;
-
-  @IsString()
-  type: string;
-  @ValidateNested()
-
-  @ValidateNested()
-  @Type(() => AddressDto)
-  address: AddressDto;
-}
 
 
 class CoordinatesDto {
@@ -65,6 +37,7 @@ export class BuildingDto {
 
   @IsString()
   type: string;
+
 }
 
 class FloorsDto {
@@ -118,19 +91,19 @@ class BlocsDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
-  surface?: number[];
+  surface: number[];
 
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  type?: string[];
+  type: string[];
 }
 
 
 
 
-export class CreateBuildingWithRelatedEntities {
+export class CreateBuildingWithDetailsAttrsDto {
   
  
   @ValidateNested()

@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Room, RoomModel } from '../models/room.model';
-import { CreateRoomsDto } from '../dtos/create-rooms.dto';
-import mongoose, { Types } from 'mongoose';
-import { CreateRoomDtoV2 } from '../dtos/create-room.dto';
-import { Floor } from 'src/modules/floor/models/floor.model';
-import {
-  CreateFloorDto,
-  CreateFloorsDto,
-} from '@modules/floor/dtos/create-floors.dto';
-import { ReadRoomOverview } from '../dtos/read-room-dto';
+import { CreateRoomsAttrsDto } from '@modules/shared/dto/room/create-rooms.dto';
 
 @Injectable()
 export class RoomServiceHelper {
@@ -23,7 +15,7 @@ export class RoomServiceHelper {
       throw new Error(error.message);
     }
   }
-  checkAllRoomsFieldsHasSameLength(roomsData: CreateRoomsDto) {
+  checkAllRoomsFieldsHasSameLength(roomsData: CreateRoomsAttrsDto) {
     let { name, floors, type, surface } = roomsData;
 
     return [name.length, floors.length, type.length, surface.length]
@@ -31,65 +23,5 @@ export class RoomServiceHelper {
       .reduce((acc, val) => acc && val, true);
   }
 
-  formatRoomsRawData(
-    roomsData: CreateRoomsDto,
-    floorsDocs: CreateFloorDto[],
-    buildingId: Types.ObjectId,
-    organizationId: Types.ObjectId,
-  ): CreateRoomDtoV2[] {
-    let { name, floors, type, surface } = roomsData;
 
-    if (!this.checkAllRoomsFieldsHasSameLength(roomsData)) {
-      throw new Error('Inadéquation des valeurs des blocs');
-    }
-    //CHECK IF THERE IS NO DOUBLE NAME VALUES
-    if (Array.from(new Set(name)).length !== name.length) {
-      throw new Error('Noms des blocs doivent etre uniques');
-    }
-
-    //CHECK IF CREATED FLOORS PROVIDED HAS INCLUDES NAMES FROM THE BLOCS ASSOCIATED FLOORS
-    if (
-      !floors
-        .map((ele) => floorsDocs.map((ele) => ele.name).includes(ele))
-        .every((ele) => ele === true)
-    ) {
-      throw new Error("erreur lors du mappage des identifiants d'étages");
-    }
-
-    return name.map((ele, index) => ({
-      name: ele,
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      buildingId: new mongoose.Types.ObjectId(buildingId),
-      floorId: new mongoose.Types.ObjectId(
-        floorsDocs.find((ele) => ele.name === floors[index]).id,
-      ),
-      ...(type[index] && { type: type[index] }),
-      ...(surface[index] && { surface: surface[index] }),
-    }));
-  }
-  async forEachAsync(arr: any[], fn: any) {
-    return arr.reduce(
-      (promise, val) => promise.then(() => fn(val)),
-      Promise.resolve(),
-    );
-  }
-  replaceRoomFieldsWithId = (room: Room): ReadRoomOverview => {
-    let _room = room.toJSON();
-
-    if (_room.floorId) {
-      _room.floor = _room.floorId;
-
-      delete _room.floorId;
-    }
-    if (_room.buildingId) {
-      _room.building = _room.buildingId;
-      delete _room.buildingId;
-    }
-    if (_room.organizationId) {
-      _room.organization = _room.organizationId;
-      delete _room.organizationId;
-    }
-
-    return _room as undefined as ReadRoomOverview;
-  };
 }

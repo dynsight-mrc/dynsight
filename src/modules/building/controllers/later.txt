@@ -1,0 +1,126 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  InternalServerErrorException,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+
+import { AuthorizationGuard } from '@common/guards/authorization.guard';
+import { RequestSharedService } from '@modules/shared/services/request.shared.service';
+import { BuildingService } from '../services/building.service';
+import { FloorSharedService } from '@modules/shared/services/floor.shared.service';
+import { RoomSharedService } from '@modules/shared/services/room.shared.service';
+import { ReadFloorDocumentWithDetailsDto } from '@modules/shared/dto/floor/read-floor.dto';
+import { FunctionSharedService } from '@modules/shared/services/functions.shared.service';
+import { ReadRoomDocumentWithDetails } from '@modules/room/dtos/read-rooms-dto';
+import { ReadBuildingDocumentWithFloorsDetailsDto } from '@modules/shared/dto/building/read-buildng.dto';
+import { ReadBuildingDocumentDto, ReadBuildingDocumentWithDetailsDto } from '../dtos/read-buildings.dto';
+import {
+  CreateBuildingAttrsDto,
+  CreateBuildingWithDetailsAttrsDto,
+} from '../dtos/create-building.dto';
+
+@Controller('buildings')
+@UseGuards(AuthorizationGuard)
+export class BuildingsController {
+  constructor(
+    private readonly buildingService: BuildingService,
+    private readonly floorSharedService: FloorSharedService,
+    private readonly roomSharedService: RoomSharedService,
+    private readonly functions: FunctionSharedService,
+  ) {}
+
+  @Get('/:id')
+  async findOne(
+    @Param('id') id: string,
+    @Query('details') details: string,
+  ): Promise<
+  ReadBuildingDocumentWithDetailsDto | ReadBuildingDocumentDto
+  > {
+    let building:
+      | ReadBuildingDocumentWithDetailsDto
+      | ReadBuildingDocumentDto;
+
+    try {
+      if (!details) {
+        building = await this.buildingService.findOneById(id);
+      }
+      building = await this.buildingService.findOneByIdWithDetails(id);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur lors de la récupération des données De l'immeuble",
+      );
+    }
+    return building;
+  }
+
+
+  @Get('/:id/with-floors')
+  async findOneWithFloors(
+    @Param('id') id: string,
+    
+  ): Promise<
+  ReadBuildingDocumentWithFloorsDetailsDto 
+  > {
+    
+      
+
+    try {
+     
+      let building:
+      | = await this.buildingService.findOneById(id);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Erreur lors de la récupération des données De l'immeuble",
+      );
+    }
+    return building;
+  }
+
+
+  @Post('')
+  @HttpCode(201)
+  async createOne(
+    @Query('organization') organizationId: string,
+    @Query('details') details: string,
+    @Body()
+    createBuildingAttrsDto:
+      | CreateBuildingAttrsDto
+      | CreateBuildingWithDetailsAttrsDto,
+  ): Promise<ReadBuildingDocumentDto> {
+    try {
+      if (!Boolean(details)) {
+        return await this.buildingService.createOne(
+          organizationId,
+          createBuildingAttrsDto as CreateBuildingAttrsDto,
+        );
+      }
+      let {
+        building: _building,
+        location,
+        floors,
+        blocs,
+      } = createBuildingAttrsDto as CreateBuildingWithDetailsAttrsDto;
+      let buildingDoc: ReadBuildingDocumentDto;
+      try {
+        buildingDoc = await this.buildingService.createOne(organizationId, {
+          ..._building,
+          address: location,
+        });
+      } catch (error) {
+        throw new InternalServerErrorException(
+          "Error lors de la creation de l'immeuble",
+        );
+      }
+
+      return buildingDetails;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+}
